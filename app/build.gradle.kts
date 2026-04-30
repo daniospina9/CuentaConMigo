@@ -32,6 +32,11 @@ android {
             "OPENROUTER_API_KEY",
             "\"${localProps.getProperty("OPENROUTER_API_KEY", "")}\""
         )
+        buildConfigField(
+            "String",
+            "OPENROUTER_MODEL",
+            "\"${localProps.getProperty("OPENROUTER_MODEL", "qwen/qwen3.5-flash-02-23")}\""
+        )
     }
 
     buildTypes {

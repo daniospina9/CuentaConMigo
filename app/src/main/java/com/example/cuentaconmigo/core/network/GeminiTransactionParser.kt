@@ -1,6 +1,7 @@
 package com.example.cuentaconmigo.core.network
 
 import android.util.Log
+import com.example.cuentaconmigo.BuildConfig
 import com.example.cuentaconmigo.domain.model.ParsedTransaction
 import com.example.cuentaconmigo.domain.model.TransactionType
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +33,7 @@ class GeminiTransactionParser @Inject constructor(
         val prompt = buildPrompt(transcript, partial, depositAccountNames, destinationAccountNames)
 
         val bodyJson = JSONObject().apply {
-            put("model", "meta-llama/llama-3.3-70b-instruct:free")
+            put("model", BuildConfig.OPENROUTER_MODEL)
             put("messages", JSONArray().apply {
                 put(JSONObject().apply {
                     put("role", "user")
