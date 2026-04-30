@@ -29,8 +29,8 @@ android {
 
         buildConfigField(
             "String",
-            "GEMINI_API_KEY",
-            "\"${localProps.getProperty("GEMINI_API_KEY", "YOUR_KEY_HERE")}\""
+            "OPENROUTER_API_KEY",
+            "\"${localProps.getProperty("OPENROUTER_API_KEY", "")}\""
         )
     }
 
@@ -86,8 +86,8 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
 
-    // Gemini
-    implementation(libs.generativeai)
+    // OpenRouter (OkHttp)
+    implementation(libs.okhttp)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

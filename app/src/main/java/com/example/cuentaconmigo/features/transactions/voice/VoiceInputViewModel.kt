@@ -16,8 +16,11 @@ import com.example.cuentaconmigo.domain.model.missingFields
 import com.example.cuentaconmigo.domain.repository.DepositAccountRepository
 import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
 import com.example.cuentaconmigo.domain.repository.TransactionRepository
+import android.util.Log
+import com.example.cuentaconmigo.core.network.RateLimitException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -76,7 +79,7 @@ class VoiceInputViewModel @Inject constructor(
         }
     }
 
-    private suspend fun handleTranscript(transcript: String, partial: ParsedTransaction?) {
+    private suspend fun handleTranscript(transcript: String, partial: ParsedTransaction?, retries: Int = 1) {
         _voiceState.value = VoiceState.Parsing(transcript)
         try {
             val parsed = withContext(Dispatchers.IO) {
@@ -95,7 +98,17 @@ class VoiceInputViewModel @Inject constructor(
                 missing.forEach { field -> audioPlayer.speakMissingField(field) }
                 _voiceState.value = VoiceState.FieldError(missing, merged)
             }
+        } catch (e: RateLimitException) {
+            if (retries > 0) {
+                Log.w("VoiceInput", "Rate limited, retrying in 5s... ($retries left)")
+                _voiceState.value = VoiceState.Parsing("$transcript (reintentando...)")
+                delay(5_000)
+                handleTranscript(transcript, partial, retries - 1)
+            } else {
+                _voiceState.value = VoiceState.Error("El servicio está ocupado. Intenta en unos segundos.")
+            }
         } catch (e: Exception) {
+            Log.e("VoiceInput", "Error calling LLM: ${e::class.simpleName} — ${e.message}", e)
             _voiceState.value = VoiceState.Error("Error al procesar el audio. Usa el formulario manual.")
         }
     }

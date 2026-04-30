@@ -1,26 +1,75 @@
 package com.example.cuentaconmigo.core.network
 
+import android.util.Log
 import com.example.cuentaconmigo.domain.model.ParsedTransaction
 import com.example.cuentaconmigo.domain.model.TransactionType
-import com.google.ai.client.generativeai.GenerativeModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONObject
 import javax.inject.Inject
+import javax.inject.Named
 import javax.inject.Singleton
+
+class RateLimitException : Exception("rate_limited")
 
 @Singleton
 class GeminiTransactionParser @Inject constructor(
-    private val model: GenerativeModel
+    private val client: OkHttpClient,
+    @Named("openrouter_api_key") private val apiKey: String
 ) {
     suspend fun parseTranscript(
         transcript: String,
         partial: ParsedTransaction? = null,
         depositAccountNames: List<String>,
         destinationAccountNames: List<String>
-    ): ParsedTransaction {
+    ): ParsedTransaction = withContext(Dispatchers.IO) {
         val prompt = buildPrompt(transcript, partial, depositAccountNames, destinationAccountNames)
-        val response = model.generateContent(prompt)
-        val text = response.text ?: return ParsedTransaction()
-        return parseJson(text)
+
+        val bodyJson = JSONObject().apply {
+            put("model", "meta-llama/llama-3.3-70b-instruct:free")
+            put("messages", JSONArray().apply {
+                put(JSONObject().apply {
+                    put("role", "user")
+                    put("content", prompt)
+                })
+            })
+        }.toString()
+
+        val request = Request.Builder()
+            .url("https://openrouter.ai/api/v1/chat/completions")
+            .header("Authorization", "Bearer $apiKey")
+            .header("X-Title", "CuentaConMigo")
+            .post(bodyJson.toRequestBody("application/json".toMediaType()))
+            .build()
+
+        val responseText = client.newCall(request).execute().use { response ->
+            response.body?.string() ?: return@withContext ParsedTransaction()
+        }
+
+        Log.d("OpenRouter", "Response: $responseText")
+
+        val json = JSONObject(responseText)
+        if (json.has("error")) {
+            val error = json.getJSONObject("error")
+            val code = error.optInt("code")
+            Log.e("OpenRouter", "API error [$code]: ${error.optString("message")}")
+            if (code == 429) throw RateLimitException()
+            return@withContext ParsedTransaction()
+        }
+
+        val content = json
+            .getJSONArray("choices")
+            .getJSONObject(0)
+            .getJSONObject("message")
+            .getString("content")
+
+        parseJson(content)
     }
 
     private fun buildPrompt(
@@ -49,7 +98,9 @@ Transcripción: $transcript
 
     private fun parseJson(json: String): ParsedTransaction {
         return try {
-            val clean = json.trim().removePrefix("```json").removeSuffix("```").trim()
+            val clean = json.trim()
+                .removePrefix("```json").removePrefix("```")
+                .removeSuffix("```").trim()
             val obj = JSONObject(clean)
             ParsedTransaction(
                 type = when (obj.optString("type")) {

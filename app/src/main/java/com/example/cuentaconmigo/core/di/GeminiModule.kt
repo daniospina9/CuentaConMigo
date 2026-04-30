@@ -1,12 +1,13 @@
 package com.example.cuentaconmigo.core.di
 
 import com.example.cuentaconmigo.BuildConfig
-import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.generationConfig
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -15,11 +16,12 @@ object GeminiModule {
 
     @Provides
     @Singleton
-    fun provideGenerativeModel(): GenerativeModel = GenerativeModel(
-        modelName = "gemini-2.0-flash",
-        apiKey = BuildConfig.GEMINI_API_KEY,
-        generationConfig = generationConfig {
-            responseMimeType = "application/json"
-        }
-    )
+    fun provideOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .build()
+
+    @Provides
+    @Named("openrouter_api_key")
+    fun provideOpenRouterApiKey(): String = BuildConfig.OPENROUTER_API_KEY
 }
