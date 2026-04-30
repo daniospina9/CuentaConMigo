@@ -1,15 +1,65 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
+# ─── Build ───────────────────────────────────────────────────────────────────
 /build
-/captures
-.externalNativeBuild
-.cxx
+app/build
+**/build/
+
+# ─── Gradle ──────────────────────────────────────────────────────────────────
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+
+# ─── Android Studio / IntelliJ ───────────────────────────────────────────────
+*.iml
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/dictionaries/
+.idea/shelf/
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/deploymentTargetSelector.xml
+.idea/dynamic.xml
+.idea/uiDesigner.xml
+
+# ─── Local config (SDK path, secrets) ────────────────────────────────────────
 local.properties
+keystore.properties
+
+# ─── Signing ─────────────────────────────────────────────────────────────────
+*.jks
+*.keystore
+
+# ─── APK / AAB artifacts ─────────────────────────────────────────────────────
+*.apk
+*.aab
+*.ap_
+
+# ─── Native build ────────────────────────────────────────────────────────────
+.externalNativeBuild/
+.cxx/
+
+# ─── Proguard output ─────────────────────────────────────────────────────────
+/captures
+mapping.txt
+seeds.txt
+usage.txt
+
+# ─── Firebase / Cloud ────────────────────────────────────────────────────────
+# google-services.json contains API keys — add to CI/CD secrets, not to git.
+google-services.json
+
+# ─── Room database (runtime files) ───────────────────────────────────────────
+# app/schemas/ is intentionally NOT ignored — keep schema JSON files
+# for migration history and to catch accidental schema changes in code review.
+*.db
+*.db-shm
+*.db-wal
+
+# ─── OS ──────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
