@@ -10,5 +10,6 @@ data class Transaction(
     val type: TransactionType,
     val amount: Long,
     val date: LocalDate,
-    val description: String?
+    val description: String?,
+    val transferGroupId: String? = null
 )

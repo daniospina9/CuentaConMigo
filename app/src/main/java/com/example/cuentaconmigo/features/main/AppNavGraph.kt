@@ -9,6 +9,7 @@ import androidx.navigation.navArgument
 import com.example.cuentaconmigo.features.accounts.deposit.DepositAccountListScreen
 import com.example.cuentaconmigo.features.accounts.destination.DestinationAccountListScreen
 import com.example.cuentaconmigo.features.transactions.form.TransactionFormScreen
+import com.example.cuentaconmigo.features.transactions.transfer.TransferScreen
 import com.example.cuentaconmigo.features.transactions.voice.VoiceInputScreen
 import com.example.cuentaconmigo.features.users.UserSelectorScreen
 
@@ -19,12 +20,14 @@ object Routes {
     const val DESTINATION_ACCOUNTS = "destination_accounts/{userId}"
     const val TRANSACTION_FORM = "transaction_form/{userId}/{type}"
     const val VOICE_INPUT = "voice_input/{userId}"
+    const val TRANSFER = "transfer/{userId}"
 
     fun home(userId: Long) = "home/$userId"
     fun depositAccounts(userId: Long) = "deposit_accounts/$userId"
     fun destinationAccounts(userId: Long) = "destination_accounts/$userId"
     fun transactionForm(userId: Long, type: String = "EXPENSE") = "transaction_form/$userId/$type"
     fun voiceInput(userId: Long) = "voice_input/$userId"
+    fun transfer(userId: Long) = "transfer/$userId"
 }
 
 @Composable
@@ -86,6 +89,16 @@ fun AppNavGraph() {
             VoiceInputScreen(
                 onNavigateToForm = { navController.navigate(Routes.transactionForm(userId)) },
                 onSuccess = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Routes.TRANSFER,
+            arguments = listOf(navArgument("userId") { type = NavType.LongType })
+        ) {
+            TransferScreen(
+                onSaved = { navController.popBackStack() },
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

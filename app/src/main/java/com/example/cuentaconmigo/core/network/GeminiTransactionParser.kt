@@ -81,21 +81,34 @@ class GeminiTransactionParser @Inject constructor(
     ): String = """
 Eres un asistente de finanzas personales colombiano. Extrae los datos de la transacción del texto de voz.
 Responde ÚNICAMENTE con JSON válido usando exactamente este formato:
-{"type":"INCOME|EXPENSE","depositAccount":"nombre","destinationAccount":"nombre o null","amount":123456,"description":"texto o null"}
+{"type":"INCOME|EXPENSE|TRANSFER","depositAccount":"nombre","toDepositAccount":"nombre o null","destinationAccount":"nombre o null","amount":123456,"description":"texto o null"}
 
-Reglas:
-- type: "INCOME" si el dinero entra, "EXPENSE" si sale
-- depositAccount: nombre de la cuenta bancaria o efectivo (debe coincidir con una de la lista)
-- destinationAccount: categoría donde va el gasto (solo para EXPENSE, null para INCOME)
-- amount: número entero positivo en pesos colombianos
-- description: nota breve opcional
+Tipos posibles:
+- "INCOME": entra dinero a una cuenta de depósito (ej: "recibí sueldo en Bancolombia")
+- "EXPENSE": sale dinero de una cuenta de depósito hacia una categoría de gasto (ej: "gasté en mercado")
+- "TRANSFER": se mueve dinero entre dos cuentas de depósito (ej: "pasé plata de Bancolombia a Nequi", "transferí de efectivo a Davivienda")
+
+Reglas por tipo:
+- INCOME  → depositAccount: cuenta que recibe | toDepositAccount: null | destinationAccount: null
+- EXPENSE → depositAccount: cuenta que paga   | toDepositAccount: null | destinationAccount: categoría de gasto
+- TRANSFER→ depositAccount: cuenta origen     | toDepositAccount: cuenta destino | destinationAccount: null
 
 Cuentas de depósito disponibles: ${depositAccounts.joinToString()}
-Cuentas de destino disponibles: ${destinationAccounts.joinToString()}
-${if (partial != null) "Datos ya conocidos: tipo=${partial.type}, cuenta=${partial.depositAccountName}, monto=${partial.amount}" else ""}
+Cuentas de destino/categorías disponibles: ${destinationAccounts.joinToString()}
+${if (partial != null) buildPartialHint(partial) else ""}
 
 Transcripción: $transcript
 """.trimIndent()
+
+    private fun buildPartialHint(partial: ParsedTransaction): String {
+        val parts = mutableListOf<String>()
+        partial.type?.let { parts.add("tipo=${it.name}") }
+        partial.depositAccountName?.let { parts.add("cuentaOrigen=$it") }
+        partial.toDepositAccountName?.let { parts.add("cuentaDestino=$it") }
+        partial.destinationAccountName?.let { parts.add("categoría=$it") }
+        partial.amount?.let { parts.add("monto=$it") }
+        return if (parts.isEmpty()) "" else "Datos ya conocidos: ${parts.joinToString()}"
+    }
 
     private fun parseJson(json: String): ParsedTransaction {
         return try {
@@ -105,13 +118,15 @@ Transcripción: $transcript
             val obj = JSONObject(clean)
             ParsedTransaction(
                 type = when (obj.optString("type")) {
-                    "INCOME"  -> TransactionType.INCOME
-                    "EXPENSE" -> TransactionType.EXPENSE
-                    else      -> null
+                    "INCOME"   -> TransactionType.INCOME
+                    "EXPENSE"  -> TransactionType.EXPENSE
+                    "TRANSFER" -> TransactionType.TRANSFER
+                    else       -> null
                 },
-                depositAccountName = obj.optString("depositAccount").ifBlank { null },
+                depositAccountName    = obj.optString("depositAccount").ifBlank { null },
+                toDepositAccountName  = obj.optString("toDepositAccount").ifBlank { null },
                 destinationAccountName = obj.optString("destinationAccount").ifBlank { null },
-                amount = obj.optLong("amount").takeIf { it > 0 },
+                amount      = obj.optLong("amount").takeIf { it > 0 },
                 description = obj.optString("description").ifBlank { null }
             )
         } catch (e: Exception) {

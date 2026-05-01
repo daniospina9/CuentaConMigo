@@ -37,9 +37,10 @@ data class TransactionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val userId: Long,
     val depositAccountId: Long,
-    val destinationAccountId: Long? = null, // null for INCOME
-    val type: String,           // "INCOME" | "EXPENSE"
-    val amount: Long,           // pesos COP, always positive
-    val date: Long,             // LocalDate.toEpochDay()
-    val description: String? = null
+    val destinationAccountId: Long? = null,
+    val type: String,               // "INCOME" | "EXPENSE"
+    val amount: Long,               // pesos COP, always positive
+    val date: Long,                 // LocalDate.toEpochDay()
+    val description: String? = null,
+    val transferGroupId: String? = null  // non-null => ambas patas de una transferencia
 )

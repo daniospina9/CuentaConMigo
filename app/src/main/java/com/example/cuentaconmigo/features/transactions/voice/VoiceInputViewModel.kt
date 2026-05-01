@@ -116,19 +116,44 @@ class VoiceInputViewModel @Inject constructor(
     private fun mergeParsed(base: ParsedTransaction?, update: ParsedTransaction): ParsedTransaction {
         if (base == null) return update
         return ParsedTransaction(
-            type = update.type ?: base.type,
-            depositAccountName = update.depositAccountName ?: base.depositAccountName,
+            type                   = update.type ?: base.type,
+            depositAccountName     = update.depositAccountName ?: base.depositAccountName,
+            toDepositAccountName   = update.toDepositAccountName ?: base.toDepositAccountName,
             destinationAccountName = update.destinationAccountName ?: base.destinationAccountName,
-            amount = update.amount ?: base.amount,
-            description = update.description ?: base.description
+            amount                 = update.amount ?: base.amount,
+            description            = update.description ?: base.description
         )
     }
 
     fun confirmTransaction(parsed: ParsedTransaction) {
-        val depositAccount = depositAccounts.value.firstOrNull {
+        val fromAccount = depositAccounts.value.firstOrNull {
             it.name.equals(parsed.depositAccountName, ignoreCase = true)
         } ?: run {
-            _voiceState.value = VoiceState.Error("Cuenta de depósito no encontrada")
+            _voiceState.value = VoiceState.Error("Cuenta origen no encontrada: ${parsed.depositAccountName}")
+            return
+        }
+
+        if (parsed.type == TransactionType.TRANSFER) {
+            val toAccount = depositAccounts.value.firstOrNull {
+                it.name.equals(parsed.toDepositAccountName, ignoreCase = true)
+            } ?: run {
+                _voiceState.value = VoiceState.Error("Cuenta destino no encontrada: ${parsed.toDepositAccountName}")
+                return
+            }
+            viewModelScope.launch {
+                runCatching {
+                    transactionRepository.insertTransfer(
+                        userId        = userId,
+                        fromAccountId = fromAccount.id,
+                        toAccountId   = toAccount.id,
+                        amount        = parsed.amount!!,
+                        date          = LocalDate.now(),
+                        description   = parsed.description
+                    )
+                }
+                    .onSuccess { _voiceState.value = VoiceState.Success }
+                    .onFailure { _voiceState.value = VoiceState.Error(it.message ?: "Error al guardar") }
+            }
             return
         }
 
@@ -136,7 +161,7 @@ class VoiceInputViewModel @Inject constructor(
             destinationAccounts.value.firstOrNull {
                 it.name.equals(parsed.destinationAccountName, ignoreCase = true)
             } ?: run {
-                _voiceState.value = VoiceState.Error("Cuenta de destino no encontrada")
+                _voiceState.value = VoiceState.Error("Categoría de gasto no encontrada: ${parsed.destinationAccountName}")
                 return
             }
         } else null
@@ -147,7 +172,7 @@ class VoiceInputViewModel @Inject constructor(
                     Transaction(
                         id = 0,
                         userId = userId,
-                        depositAccountId = depositAccount.id,
+                        depositAccountId = fromAccount.id,
                         destinationAccountId = destinationAccount?.id,
                         type = parsed.type!!,
                         amount = parsed.amount!!,

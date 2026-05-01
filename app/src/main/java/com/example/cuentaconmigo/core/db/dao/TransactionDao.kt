@@ -19,8 +19,14 @@ interface TransactionDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(transaction: TransactionEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertAll(transactions: List<TransactionEntity>)
+
     @Delete
     suspend fun delete(transaction: TransactionEntity)
+
+    @Query("DELETE FROM transactions WHERE transferGroupId = :transferGroupId")
+    suspend fun deleteByTransferGroupId(transferGroupId: String)
 
     @Query("SELECT * FROM transactions WHERE userId = :userId ORDER BY date DESC")
     fun getByUser(userId: Long): Flow<List<TransactionEntity>>

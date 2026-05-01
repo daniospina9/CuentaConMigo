@@ -104,7 +104,10 @@ private fun IdleContent(onMicClick: () -> Unit, onManualClick: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text("Toca el micrófono y di tu transacción", style = MaterialTheme.typography.bodyLarge)
         Text(
-            "Ejemplo: \"Gasto, Cuenta Davivienda, Necesidades Básicas, 150000, mercado\"",
+            "Ejemplos:\n" +
+            "• \"Gasto 150 mil en mercado, Davivienda\"\n" +
+            "• \"Ingresé un millón a Bancolombia\"\n" +
+            "• \"Transferí 200 mil de Bancolombia a Nequi\"",
             style = MaterialTheme.typography.bodySmall
         )
         LargeFloatingActionButton(onClick = onMicClick) {
@@ -126,13 +129,26 @@ private fun ListeningContent() {
 private fun ConfirmContent(parsed: ParsedTransaction, onConfirm: () -> Unit, onCancel: () -> Unit) {
     Card {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Confirmar transacción", style = MaterialTheme.typography.titleMedium)
+            val typeLabel = when (parsed.type) {
+                TransactionType.INCOME   -> "Ingreso"
+                TransactionType.EXPENSE  -> "Gasto"
+                TransactionType.TRANSFER -> "Transferencia"
+                null                     -> "-"
+            }
+            Text("Confirmar $typeLabel", style = MaterialTheme.typography.titleMedium)
             HorizontalDivider()
-            ConfirmRow("Tipo", if (parsed.type == TransactionType.INCOME) "Ingreso" else "Gasto")
-            ConfirmRow("Cuenta", parsed.depositAccountName ?: "-")
-            parsed.destinationAccountName?.let { ConfirmRow("Destino", it) }
+
+            if (parsed.type == TransactionType.TRANSFER) {
+                ConfirmRow("De", parsed.depositAccountName ?: "-")
+                ConfirmRow("A",  parsed.toDepositAccountName ?: "-")
+            } else {
+                ConfirmRow("Cuenta", parsed.depositAccountName ?: "-")
+                parsed.destinationAccountName?.let { ConfirmRow("Categoría", it) }
+            }
+
             ConfirmRow("Monto", parsed.amount?.toCopString() ?: "-")
             parsed.description?.let { ConfirmRow("Descripción", it) }
+
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) { Text("Cancelar") }
                 Button(onClick = onConfirm, modifier = Modifier.weight(1f)) { Text("Confirmar") }
