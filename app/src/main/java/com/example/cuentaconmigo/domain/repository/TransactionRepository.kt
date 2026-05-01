@@ -29,4 +29,15 @@ interface TransactionRepository {
         startDay: Long,
         endDay: Long
     ): Flow<List<Transaction>>
+
+    fun getByDestinationAccount(
+        destinationAccountId: Long,
+        startDay: Long,
+        endDay: Long
+    ): Flow<List<Transaction>>
+
+    suspend fun getOpeningBalance(depositAccountId: Long, beforeDay: Long): Long
+    suspend fun getPeriodIncome(depositAccountId: Long, startDay: Long, endDay: Long): Long
+    suspend fun getPeriodExpense(depositAccountId: Long, startDay: Long, endDay: Long): Long
+    suspend fun getNonTransferTransactions(userId: Long, startDay: Long, endDay: Long): List<Transaction>
 }

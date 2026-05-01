@@ -1,5 +1,6 @@
 package com.example.cuentaconmigo.features.main
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -8,6 +9,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.cuentaconmigo.features.accounts.deposit.DepositAccountListScreen
 import com.example.cuentaconmigo.features.accounts.destination.DestinationAccountListScreen
+import com.example.cuentaconmigo.features.reports.AccountTransactionsScreen
+import com.example.cuentaconmigo.features.reports.FinancialReportScreen
 import com.example.cuentaconmigo.features.transactions.form.TransactionFormScreen
 import com.example.cuentaconmigo.features.transactions.transfer.TransferScreen
 import com.example.cuentaconmigo.features.transactions.voice.VoiceInputScreen
@@ -21,6 +24,9 @@ object Routes {
     const val TRANSACTION_FORM = "transaction_form/{userId}/{type}"
     const val VOICE_INPUT = "voice_input/{userId}"
     const val TRANSFER = "transfer/{userId}"
+    const val ACCOUNT_TRANSACTIONS =
+        "account_transactions/{destinationAccountId}/{startDay}/{endDay}?accountName={accountName}"
+    const val FINANCIAL_REPORT = "financial_report/{userId}"
 
     fun home(userId: Long) = "home/$userId"
     fun depositAccounts(userId: Long) = "deposit_accounts/$userId"
@@ -28,6 +34,9 @@ object Routes {
     fun transactionForm(userId: Long, type: String = "EXPENSE") = "transaction_form/$userId/$type"
     fun voiceInput(userId: Long) = "voice_input/$userId"
     fun transfer(userId: Long) = "transfer/$userId"
+    fun accountTransactions(destinationAccountId: Long, accountName: String, startDay: Long, endDay: Long) =
+        "account_transactions/$destinationAccountId/$startDay/$endDay?accountName=${Uri.encode(accountName)}"
+    fun financialReport(userId: Long) = "financial_report/$userId"
 }
 
 @Composable
@@ -100,6 +109,29 @@ fun AppNavGraph() {
                 onSaved = { navController.popBackStack() },
                 onNavigateBack = { navController.popBackStack() }
             )
+        }
+
+        composable(
+            route = Routes.ACCOUNT_TRANSACTIONS,
+            arguments = listOf(
+                navArgument("destinationAccountId") { type = NavType.LongType },
+                navArgument("startDay") { type = NavType.LongType },
+                navArgument("endDay") { type = NavType.LongType },
+                navArgument("accountName") { type = NavType.StringType; defaultValue = "Cuenta" }
+            )
+        ) { backStack ->
+            val accountName = backStack.arguments?.getString("accountName") ?: "Cuenta"
+            AccountTransactionsScreen(
+                accountName = accountName,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Routes.FINANCIAL_REPORT,
+            arguments = listOf(navArgument("userId") { type = NavType.LongType })
+        ) {
+            FinancialReportScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }

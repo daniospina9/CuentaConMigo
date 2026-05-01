@@ -38,6 +38,10 @@ class HomeViewModel @Inject constructor(
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    val totalBalance: StateFlow<Long> = accountsWithBalances
+        .map { list -> list.sumOf { it.balance } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0L)
+
     init {
         viewModelScope.launch {
             _userName.value = userRepository.getUserById(userId)?.name ?: ""

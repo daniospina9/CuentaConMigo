@@ -83,6 +83,26 @@ class TransactionRepositoryImpl @Inject constructor(
     ): Flow<List<Transaction>> =
         dao.getStatementForAccount(depositAccountId, startDay, endDay)
             .map { list -> list.map { it.toDomain() } }
+
+    override fun getByDestinationAccount(
+        destinationAccountId: Long,
+        startDay: Long,
+        endDay: Long
+    ): Flow<List<Transaction>> =
+        dao.getByDestinationAccount(destinationAccountId, startDay, endDay)
+            .map { list -> list.map { it.toDomain() } }
+
+    override suspend fun getOpeningBalance(depositAccountId: Long, beforeDay: Long): Long =
+        dao.getOpeningBalance(depositAccountId, beforeDay)
+
+    override suspend fun getPeriodIncome(depositAccountId: Long, startDay: Long, endDay: Long): Long =
+        dao.getPeriodIncome(depositAccountId, startDay, endDay)
+
+    override suspend fun getPeriodExpense(depositAccountId: Long, startDay: Long, endDay: Long): Long =
+        dao.getPeriodExpense(depositAccountId, startDay, endDay)
+
+    override suspend fun getNonTransferTransactions(userId: Long, startDay: Long, endDay: Long): List<Transaction> =
+        dao.getNonTransferTransactions(userId, startDay, endDay).map { it.toDomain() }
 }
 
 private fun TransactionEntity.toDomain() = Transaction(

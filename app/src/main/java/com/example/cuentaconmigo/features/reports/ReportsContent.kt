@@ -1,20 +1,28 @@
 package com.example.cuentaconmigo.features.reports
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.example.cuentaconmigo.core.util.toCopString
-import com.example.cuentaconmigo.core.util.toSignedCopString
 import com.example.cuentaconmigo.domain.model.AccountPercentage
+import com.example.cuentaconmigo.features.main.Routes
 
 @Composable
-fun ReportsContent(viewModel: ReportsViewModel = hiltViewModel()) {
+fun ReportsContent(
+    userId: Long,
+    navController: NavController,
+    viewModel: ReportsViewModel = hiltViewModel()
+) {
     val reportState by viewModel.reportState.collectAsState()
     val dateFilter by viewModel.dateFilter.collectAsState()
 
@@ -69,7 +77,20 @@ fun ReportsContent(viewModel: ReportsViewModel = hiltViewModel()) {
                 }
             } else {
                 items(reportState.expensePercentages) { item ->
-                    ExpenseRow(item)
+                    ExpenseRow(
+                        item = item,
+                        onClick = {
+                            val (startDay, endDay) = viewModel.currentDateRange()
+                            navController.navigate(
+                                Routes.accountTransactions(
+                                    destinationAccountId = item.destinationAccountId,
+                                    accountName = item.destinationAccountName,
+                                    startDay = startDay,
+                                    endDay = endDay
+                                )
+                            )
+                        }
+                    )
                     HorizontalDivider()
                 }
                 item {
@@ -87,30 +108,13 @@ fun ReportsContent(viewModel: ReportsViewModel = hiltViewModel()) {
             }
 
             item {
-                Text(
-                    "Inversiones",
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-                Card(
-                    Modifier
+                OutlinedButton(
+                    onClick = { navController.navigate(Routes.financialReport(userId)) },
+                    modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
-                    Row(
-                        Modifier
-                            .padding(16.dp)
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Balance total")
-                        Text(
-                            reportState.investmentBalance.toSignedCopString(),
-                            color = if (reportState.investmentBalance >= 0)
-                                MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.error
-                        )
-                    }
+                    Text("Generar informe personalizado")
                 }
             }
         }
@@ -118,8 +122,9 @@ fun ReportsContent(viewModel: ReportsViewModel = hiltViewModel()) {
 }
 
 @Composable
-private fun ExpenseRow(item: AccountPercentage) {
+private fun ExpenseRow(item: AccountPercentage, onClick: () -> Unit) {
     ListItem(
+        modifier = Modifier.clickable(onClick = onClick),
         headlineContent = { Text(item.destinationAccountName) },
         supportingContent = {
             LinearProgressIndicator(
@@ -128,9 +133,19 @@ private fun ExpenseRow(item: AccountPercentage) {
             )
         },
         trailingContent = {
-            Column(horizontalAlignment = Alignment.End) {
-                Text(item.total.toCopString(), style = MaterialTheme.typography.bodyMedium)
-                Text("${item.percentage}%", style = MaterialTheme.typography.bodySmall)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(item.total.toCopString(), style = MaterialTheme.typography.bodyMedium)
+                    Text("${item.percentage}%", style = MaterialTheme.typography.bodySmall)
+                }
+                Icon(
+                    Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     )

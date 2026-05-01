@@ -23,6 +23,7 @@ fun HomeContent(
 ) {
     val userName by viewModel.userName.collectAsState()
     val accounts by viewModel.accountsWithBalances.collectAsState()
+    val totalBalance by viewModel.totalBalance.collectAsState()
 
     Column(
         Modifier
@@ -33,6 +34,24 @@ fun HomeContent(
     ) {
         if (userName.isNotBlank()) {
             Text("Hola, $userName", style = MaterialTheme.typography.headlineSmall)
+        }
+
+        Card(
+            Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+        ) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    "Balance total",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Text(
+                    totalBalance.toCopString(),
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
         }
 
         Text("Cuentas de depósito", style = MaterialTheme.typography.labelLarge)

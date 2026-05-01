@@ -71,4 +71,58 @@ interface TransactionDao {
         startEpochDay: Long,
         endEpochDay: Long
     ): Flow<List<TransactionEntity>>
+
+    @Query("""
+        SELECT * FROM transactions
+        WHERE destinationAccountId = :destinationAccountId
+          AND date BETWEEN :startEpochDay AND :endEpochDay
+        ORDER BY date DESC
+    """)
+    fun getByDestinationAccount(
+        destinationAccountId: Long,
+        startEpochDay: Long,
+        endEpochDay: Long
+    ): Flow<List<TransactionEntity>>
+
+    @Query("""
+        SELECT COALESCE(SUM(CASE WHEN type = 'INCOME' THEN amount ELSE -amount END), 0)
+        FROM transactions
+        WHERE depositAccountId = :depositAccountId
+          AND date < :beforeEpochDay
+          AND transferGroupId IS NULL
+    """)
+    suspend fun getOpeningBalance(depositAccountId: Long, beforeEpochDay: Long): Long
+
+    @Query("""
+        SELECT COALESCE(SUM(amount), 0)
+        FROM transactions
+        WHERE depositAccountId = :depositAccountId
+          AND date BETWEEN :startEpochDay AND :endEpochDay
+          AND type = 'INCOME'
+          AND transferGroupId IS NULL
+    """)
+    suspend fun getPeriodIncome(depositAccountId: Long, startEpochDay: Long, endEpochDay: Long): Long
+
+    @Query("""
+        SELECT COALESCE(SUM(amount), 0)
+        FROM transactions
+        WHERE depositAccountId = :depositAccountId
+          AND date BETWEEN :startEpochDay AND :endEpochDay
+          AND type = 'EXPENSE'
+          AND transferGroupId IS NULL
+    """)
+    suspend fun getPeriodExpense(depositAccountId: Long, startEpochDay: Long, endEpochDay: Long): Long
+
+    @Query("""
+        SELECT * FROM transactions
+        WHERE userId = :userId
+          AND date BETWEEN :startEpochDay AND :endEpochDay
+          AND transferGroupId IS NULL
+        ORDER BY date DESC
+    """)
+    suspend fun getNonTransferTransactions(
+        userId: Long,
+        startEpochDay: Long,
+        endEpochDay: Long
+    ): List<TransactionEntity>
 }
