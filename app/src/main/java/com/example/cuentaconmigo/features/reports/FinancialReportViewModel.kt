@@ -62,9 +62,9 @@ class FinancialReportViewModel @Inject constructor(
             val accounts = depositAccountRepository.getByUser(userId).first()
 
             val statements = accounts.map { account ->
-                val opening = transactionRepository.getOpeningBalance(account.id, startDay)
-                val income = transactionRepository.getPeriodIncome(account.id, startDay, endDay)
-                val expense = transactionRepository.getPeriodExpense(account.id, startDay, endDay)
+                val opening = transactionRepository.getOpeningBalance(account.id, start)
+                val income = transactionRepository.getPeriodIncome(account.id, start, end)
+                val expense = transactionRepository.getPeriodExpense(account.id, start, end)
                 DepositAccountStatement(
                     accountName = account.name,
                     openingBalance = opening,
@@ -74,7 +74,7 @@ class FinancialReportViewModel @Inject constructor(
                 )
             }
 
-            val transactions = transactionRepository.getNonTransferTransactions(userId, startDay, endDay)
+            val transactions = transactionRepository.getNonTransferTransactions(userId, start, end)
 
             val expenseTotals = transactionRepository
                 .getExpenseTotalsByDestination(userId, startDay, endDay)

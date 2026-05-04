@@ -6,13 +6,8 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.example.cuentaconmigo.core.db.entities.TransactionEntity
+import com.example.cuentaconmigo.domain.model.AccountTotal
 import kotlinx.coroutines.flow.Flow
-
-data class AccountTotal(
-    val destinationAccountId: Long,
-    val destinationAccountName: String,
-    val total: Long
-)
 
 @Dao
 interface TransactionDao {

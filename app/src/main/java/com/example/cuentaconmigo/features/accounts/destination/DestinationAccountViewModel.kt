@@ -5,7 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cuentaconmigo.domain.model.AccountType
 import com.example.cuentaconmigo.domain.model.DestinationAccount
-import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
+import com.example.cuentaconmigo.domain.usecase.CreateDestinationAccountUseCase
+import com.example.cuentaconmigo.domain.usecase.DeleteDestinationAccountUseCase
+import com.example.cuentaconmigo.domain.usecase.GetDestinationAccountsUseCase
+import com.example.cuentaconmigo.domain.usecase.UpdateDestinationAccountUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -13,13 +16,16 @@ import javax.inject.Inject
 
 @HiltViewModel
 class DestinationAccountViewModel @Inject constructor(
-    private val repository: DestinationAccountRepository,
+    private val getDestinationAccountsUseCase: GetDestinationAccountsUseCase,
+    private val createDestinationAccountUseCase: CreateDestinationAccountUseCase,
+    private val updateDestinationAccountUseCase: UpdateDestinationAccountUseCase,
+    private val deleteDestinationAccountUseCase: DeleteDestinationAccountUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val userId: Long = checkNotNull(savedStateHandle["userId"])
 
-    val accounts: StateFlow<List<DestinationAccount>> = repository.getByUser(userId)
+    val accounts: StateFlow<List<DestinationAccount>> = getDestinationAccountsUseCase(userId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _errorMessage = MutableStateFlow<String?>(null)
@@ -28,7 +34,7 @@ class DestinationAccountViewModel @Inject constructor(
     fun createAccount(name: String, type: AccountType) {
         viewModelScope.launch {
             runCatching {
-                repository.create(
+                createDestinationAccountUseCase(
                     DestinationAccount(id = 0, userId = userId, name = name.trim(), type = type, isDefault = false)
                 )
             }.onFailure { _errorMessage.value = it.message }
@@ -38,14 +44,14 @@ class DestinationAccountViewModel @Inject constructor(
     fun updateAccount(account: DestinationAccount, newName: String) {
         viewModelScope.launch {
             runCatching {
-                repository.update(account.copy(name = newName.trim()))
+                updateDestinationAccountUseCase(account.copy(name = newName.trim()))
             }.onFailure { _errorMessage.value = it.message }
         }
     }
 
     fun deleteAccount(account: DestinationAccount) {
         viewModelScope.launch {
-            repository.delete(account)
+            deleteDestinationAccountUseCase(account)
                 .onFailure { _errorMessage.value = it.message }
         }
     }

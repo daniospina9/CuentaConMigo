@@ -2,6 +2,7 @@ package com.example.cuentaconmigo.core.db.repository
 
 import com.example.cuentaconmigo.core.db.dao.UserDao
 import com.example.cuentaconmigo.core.db.entities.UserEntity
+import com.example.cuentaconmigo.core.db.repository.mappers.toDomain
 import com.example.cuentaconmigo.domain.model.User
 import com.example.cuentaconmigo.domain.repository.UserRepository
 import kotlinx.coroutines.flow.Flow
@@ -29,5 +30,3 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun deleteUser(user: User) =
         userDao.delete(UserEntity(id = user.id, name = user.name))
 }
-
-private fun UserEntity.toDomain() = User(id = id, name = name)

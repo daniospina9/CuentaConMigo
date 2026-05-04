@@ -1,7 +1,8 @@
 package com.example.cuentaconmigo.core.db.repository
 
 import com.example.cuentaconmigo.core.db.dao.DepositAccountDao
-import com.example.cuentaconmigo.core.db.entities.DepositAccountEntity
+import com.example.cuentaconmigo.core.db.repository.mappers.toDomain
+import com.example.cuentaconmigo.core.db.repository.mappers.toEntity
 import com.example.cuentaconmigo.domain.model.DepositAccount
 import com.example.cuentaconmigo.domain.repository.DepositAccountRepository
 import kotlinx.coroutines.flow.Flow
@@ -32,9 +33,3 @@ class DepositAccountRepositoryImpl @Inject constructor(
     override suspend fun getById(id: Long): DepositAccount? =
         dao.getById(id)?.toDomain()
 }
-
-private fun DepositAccountEntity.toDomain() =
-    DepositAccount(id = id, userId = userId, name = name)
-
-private fun DepositAccount.toEntity() =
-    DepositAccountEntity(id = id, userId = userId, name = name)

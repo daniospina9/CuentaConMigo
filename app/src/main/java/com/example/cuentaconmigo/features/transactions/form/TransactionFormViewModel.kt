@@ -7,9 +7,9 @@ import com.example.cuentaconmigo.domain.model.DepositAccount
 import com.example.cuentaconmigo.domain.model.DestinationAccount
 import com.example.cuentaconmigo.domain.model.Transaction
 import com.example.cuentaconmigo.domain.model.TransactionType
-import com.example.cuentaconmigo.domain.repository.DepositAccountRepository
-import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
-import com.example.cuentaconmigo.domain.repository.TransactionRepository
+import com.example.cuentaconmigo.domain.usecase.GetDepositAccountsUseCase
+import com.example.cuentaconmigo.domain.usecase.GetDestinationAccountsUseCase
+import com.example.cuentaconmigo.domain.usecase.InsertTransactionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -34,9 +34,9 @@ data class TransactionFormState(
 
 @HiltViewModel
 class TransactionFormViewModel @Inject constructor(
-    private val transactionRepository: TransactionRepository,
-    private val depositAccountRepository: DepositAccountRepository,
-    private val destinationAccountRepository: DestinationAccountRepository,
+    private val insertTransactionUseCase: InsertTransactionUseCase,
+    private val getDepositAccountsUseCase: GetDepositAccountsUseCase,
+    private val getDestinationAccountsUseCase: GetDestinationAccountsUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -51,8 +51,8 @@ class TransactionFormViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             combine(
-                depositAccountRepository.getByUser(userId),
-                destinationAccountRepository.getByUser(userId)
+                getDepositAccountsUseCase(userId),
+                getDestinationAccountsUseCase(userId)
             ) { deposits, destinations -> deposits to destinations }
                 .collect { (deposits, destinations) ->
                     _state.update { it.copy(depositAccounts = deposits, destinationAccounts = destinations) }
@@ -83,7 +83,7 @@ class TransactionFormViewModel @Inject constructor(
 
         viewModelScope.launch {
             runCatching {
-                transactionRepository.insert(
+                insertTransactionUseCase(
                     Transaction(
                         id = 0,
                         userId = userId,

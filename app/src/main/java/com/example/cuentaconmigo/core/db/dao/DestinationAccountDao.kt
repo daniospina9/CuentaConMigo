@@ -31,4 +31,7 @@ interface DestinationAccountDao {
 
     @Query("SELECT * FROM destination_accounts WHERE userId = :userId AND type = 'investment' LIMIT 1")
     suspend fun getInvestmentAccount(userId: Long): DestinationAccountEntity?
+
+    @Query("SELECT * FROM destination_accounts WHERE userId = :userId AND type = 'investment'")
+    fun getInvestmentAccounts(userId: Long): Flow<List<DestinationAccountEntity>>
 }

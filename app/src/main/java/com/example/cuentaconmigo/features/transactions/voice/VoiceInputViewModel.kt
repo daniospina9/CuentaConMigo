@@ -3,7 +3,7 @@ package com.example.cuentaconmigo.features.transactions.voice
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.cuentaconmigo.core.network.GeminiTransactionParser
+import com.example.cuentaconmigo.domain.repository.TransactionParserRepository
 import com.example.cuentaconmigo.core.util.AudioPlayer
 import com.example.cuentaconmigo.core.voice.RecognitionResult
 import com.example.cuentaconmigo.core.voice.SpeechRecognizerManager
@@ -13,9 +13,10 @@ import com.example.cuentaconmigo.domain.model.ParsedTransaction
 import com.example.cuentaconmigo.domain.model.Transaction
 import com.example.cuentaconmigo.domain.model.TransactionType
 import com.example.cuentaconmigo.domain.model.missingFields
-import com.example.cuentaconmigo.domain.repository.DepositAccountRepository
-import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
-import com.example.cuentaconmigo.domain.repository.TransactionRepository
+import com.example.cuentaconmigo.domain.usecase.GetDepositAccountsUseCase
+import com.example.cuentaconmigo.domain.usecase.GetDestinationAccountsUseCase
+import com.example.cuentaconmigo.domain.usecase.InsertTransactionUseCase
+import com.example.cuentaconmigo.domain.usecase.InsertTransferUseCase
 import android.util.Log
 import com.example.cuentaconmigo.core.network.RateLimitException
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -40,10 +41,11 @@ sealed class VoiceState {
 @HiltViewModel
 class VoiceInputViewModel @Inject constructor(
     private val speechRecognizerManager: SpeechRecognizerManager,
-    private val geminiParser: GeminiTransactionParser,
-    private val transactionRepository: TransactionRepository,
-    private val depositAccountRepository: DepositAccountRepository,
-    private val destinationAccountRepository: DestinationAccountRepository,
+    private val parserRepository: TransactionParserRepository,
+    private val insertTransactionUseCase: InsertTransactionUseCase,
+    private val insertTransferUseCase: InsertTransferUseCase,
+    private val getDepositAccountsUseCase: GetDepositAccountsUseCase,
+    private val getDestinationAccountsUseCase: GetDestinationAccountsUseCase,
     private val audioPlayer: AudioPlayer,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -58,10 +60,10 @@ class VoiceInputViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            depositAccountRepository.getByUser(userId).collect { depositAccounts.value = it }
+            getDepositAccountsUseCase(userId).collect { depositAccounts.value = it }
         }
         viewModelScope.launch {
-            destinationAccountRepository.getByUser(userId).collect { destinationAccounts.value = it }
+            getDestinationAccountsUseCase(userId).collect { destinationAccounts.value = it }
         }
     }
 
@@ -83,7 +85,7 @@ class VoiceInputViewModel @Inject constructor(
         _voiceState.value = VoiceState.Parsing(transcript)
         try {
             val parsed = withContext(Dispatchers.IO) {
-                geminiParser.parseTranscript(
+                parserRepository.parseTranscript(
                     transcript = transcript,
                     partial = partial,
                     depositAccountNames = depositAccounts.value.map { it.name },
@@ -142,7 +144,7 @@ class VoiceInputViewModel @Inject constructor(
             }
             viewModelScope.launch {
                 runCatching {
-                    transactionRepository.insertTransfer(
+                    insertTransferUseCase(
                         userId        = userId,
                         fromAccountId = fromAccount.id,
                         toAccountId   = toAccount.id,
@@ -168,7 +170,7 @@ class VoiceInputViewModel @Inject constructor(
 
         viewModelScope.launch {
             runCatching {
-                transactionRepository.insert(
+                insertTransactionUseCase(
                     Transaction(
                         id = 0,
                         userId = userId,

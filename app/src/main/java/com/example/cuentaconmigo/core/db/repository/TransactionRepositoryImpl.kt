@@ -2,9 +2,10 @@ package com.example.cuentaconmigo.core.db.repository
 
 import com.example.cuentaconmigo.core.db.dao.TransactionDao
 import com.example.cuentaconmigo.core.db.entities.TransactionEntity
+import com.example.cuentaconmigo.core.db.repository.mappers.toDomain
+import com.example.cuentaconmigo.core.db.repository.mappers.toEntity
 import com.example.cuentaconmigo.domain.model.AccountTotal
 import com.example.cuentaconmigo.domain.model.Transaction
-import com.example.cuentaconmigo.domain.model.TransactionType
 import com.example.cuentaconmigo.domain.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -92,39 +93,15 @@ class TransactionRepositoryImpl @Inject constructor(
         dao.getByDestinationAccount(destinationAccountId, startDay, endDay)
             .map { list -> list.map { it.toDomain() } }
 
-    override suspend fun getOpeningBalance(depositAccountId: Long, beforeDay: Long): Long =
-        dao.getOpeningBalance(depositAccountId, beforeDay)
+    override suspend fun getOpeningBalance(depositAccountId: Long, beforeDay: LocalDate): Long =
+        dao.getOpeningBalance(depositAccountId, beforeDay.toEpochDay())
 
-    override suspend fun getPeriodIncome(depositAccountId: Long, startDay: Long, endDay: Long): Long =
-        dao.getPeriodIncome(depositAccountId, startDay, endDay)
+    override suspend fun getPeriodIncome(depositAccountId: Long, startDay: LocalDate, endDay: LocalDate): Long =
+        dao.getPeriodIncome(depositAccountId, startDay.toEpochDay(), endDay.toEpochDay())
 
-    override suspend fun getPeriodExpense(depositAccountId: Long, startDay: Long, endDay: Long): Long =
-        dao.getPeriodExpense(depositAccountId, startDay, endDay)
+    override suspend fun getPeriodExpense(depositAccountId: Long, startDay: LocalDate, endDay: LocalDate): Long =
+        dao.getPeriodExpense(depositAccountId, startDay.toEpochDay(), endDay.toEpochDay())
 
-    override suspend fun getNonTransferTransactions(userId: Long, startDay: Long, endDay: Long): List<Transaction> =
-        dao.getNonTransferTransactions(userId, startDay, endDay).map { it.toDomain() }
+    override suspend fun getNonTransferTransactions(userId: Long, startDay: LocalDate, endDay: LocalDate): List<Transaction> =
+        dao.getNonTransferTransactions(userId, startDay.toEpochDay(), endDay.toEpochDay()).map { it.toDomain() }
 }
-
-private fun TransactionEntity.toDomain() = Transaction(
-    id = id,
-    userId = userId,
-    depositAccountId = depositAccountId,
-    destinationAccountId = destinationAccountId,
-    type = if (type == "INCOME") TransactionType.INCOME else TransactionType.EXPENSE,
-    amount = amount,
-    date = LocalDate.ofEpochDay(date),
-    description = description,
-    transferGroupId = transferGroupId
-)
-
-private fun Transaction.toEntity() = TransactionEntity(
-    id = id,
-    userId = userId,
-    depositAccountId = depositAccountId,
-    destinationAccountId = destinationAccountId,
-    type = if (type == TransactionType.INCOME) "INCOME" else "EXPENSE",
-    amount = amount,
-    date = date.toEpochDay(),
-    description = description,
-    transferGroupId = transferGroupId
-)
