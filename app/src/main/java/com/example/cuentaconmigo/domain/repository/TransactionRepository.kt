@@ -42,4 +42,7 @@ interface TransactionRepository {
     suspend fun getNonTransferTransactions(userId: Long, startDay: LocalDate, endDay: LocalDate): List<Transaction>
     suspend fun update(transaction: Transaction)
     suspend fun getById(id: Long): Transaction?
+    suspend fun getTotalInvestedInAccount(accountId: Long): Long
+    fun getByDestinationAccountAll(destinationAccountId: Long): Flow<List<Transaction>>
+    fun getByParentInvestmentAccount(parentAccountId: Long, startDay: Long, endDay: Long): Flow<List<Transaction>>
 }

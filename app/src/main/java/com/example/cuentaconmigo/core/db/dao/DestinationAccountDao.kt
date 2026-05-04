@@ -23,15 +23,18 @@ interface DestinationAccountDao {
     @Delete
     suspend fun delete(account: DestinationAccountEntity)
 
-    @Query("SELECT * FROM destination_accounts WHERE userId = :userId ORDER BY name ASC")
+    @Query("SELECT * FROM destination_accounts WHERE userId = :userId AND parentAccountId IS NULL ORDER BY name ASC")
     fun getByUser(userId: Long): Flow<List<DestinationAccountEntity>>
 
     @Query("SELECT * FROM destination_accounts WHERE id = :id")
     suspend fun getById(id: Long): DestinationAccountEntity?
 
-    @Query("SELECT * FROM destination_accounts WHERE userId = :userId AND type = 'investment' LIMIT 1")
+    @Query("SELECT * FROM destination_accounts WHERE userId = :userId AND type = 'investment' AND parentAccountId IS NULL LIMIT 1")
     suspend fun getInvestmentAccount(userId: Long): DestinationAccountEntity?
 
-    @Query("SELECT * FROM destination_accounts WHERE userId = :userId AND type = 'investment'")
+    @Query("SELECT * FROM destination_accounts WHERE userId = :userId AND type = 'investment' AND parentAccountId IS NULL ORDER BY name ASC")
     fun getInvestmentAccounts(userId: Long): Flow<List<DestinationAccountEntity>>
+
+    @Query("SELECT * FROM destination_accounts WHERE parentAccountId = :parentAccountId ORDER BY name ASC")
+    fun getSubAccounts(parentAccountId: Long): Flow<List<DestinationAccountEntity>>
 }

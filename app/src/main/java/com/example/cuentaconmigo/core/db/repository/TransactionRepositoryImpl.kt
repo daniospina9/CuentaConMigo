@@ -110,4 +110,13 @@ class TransactionRepositoryImpl @Inject constructor(
 
     override suspend fun getById(id: Long): Transaction? =
         dao.getById(id)?.toDomain()
+
+    override suspend fun getTotalInvestedInAccount(accountId: Long): Long =
+        dao.getTotalInvestedInAccount(accountId)
+
+    override fun getByDestinationAccountAll(destinationAccountId: Long): Flow<List<Transaction>> =
+        dao.getByDestinationAccountAll(destinationAccountId).map { list -> list.map { it.toDomain() } }
+
+    override fun getByParentInvestmentAccount(parentAccountId: Long, startDay: Long, endDay: Long): Flow<List<Transaction>> =
+        dao.getByParentInvestmentAccount(parentAccountId, startDay, endDay).map { list -> list.map { it.toDomain() } }
 }

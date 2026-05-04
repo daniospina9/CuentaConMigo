@@ -3,6 +3,7 @@ package com.example.cuentaconmigo.core.db.repository.mappers
 import com.example.cuentaconmigo.core.db.entities.DestinationAccountEntity
 import com.example.cuentaconmigo.domain.model.AccountType
 import com.example.cuentaconmigo.domain.model.DestinationAccount
+import com.example.cuentaconmigo.domain.model.InvestmentSubtype
 
 // AccountType
 fun String.toAccountType(): AccountType = when (this) {
@@ -18,13 +19,30 @@ fun AccountType.toDbString(): String = when (this) {
     AccountType.INVESTMENT -> "investment"
 }
 
+// InvestmentSubtype
+fun String?.toInvestmentSubtype(): InvestmentSubtype? = when (this) {
+    "asset"   -> InvestmentSubtype.ASSET
+    "liquid"  -> InvestmentSubtype.LIQUID
+    "expense" -> InvestmentSubtype.EXPENSE
+    else      -> null
+}
+
+fun InvestmentSubtype?.toSubtypeDbString(): String? = when (this) {
+    InvestmentSubtype.ASSET   -> "asset"
+    InvestmentSubtype.LIQUID  -> "liquid"
+    InvestmentSubtype.EXPENSE -> "expense"
+    null                      -> null
+}
+
 // Entity ↔ Domain
 fun DestinationAccountEntity.toDomain() = DestinationAccount(
     id = id,
     userId = userId,
     name = name,
     type = type.toAccountType(),
-    isDefault = isDefault
+    isDefault = isDefault,
+    investmentSubtype = investmentSubtype.toInvestmentSubtype(),
+    parentAccountId = parentAccountId
 )
 
 fun DestinationAccount.toEntity() = DestinationAccountEntity(
@@ -32,5 +50,7 @@ fun DestinationAccount.toEntity() = DestinationAccountEntity(
     userId = userId,
     name = name,
     type = type.toDbString(),
-    isDefault = isDefault
+    isDefault = isDefault,
+    investmentSubtype = investmentSubtype.toSubtypeDbString(),
+    parentAccountId = parentAccountId
 )

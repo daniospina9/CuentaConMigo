@@ -43,17 +43,21 @@ interface TransactionDao {
     fun getDepositAccountBalance(depositAccountId: Long): Flow<Long>
 
     @Query("""
-        SELECT da.id   AS destinationAccountId,
-               da.name AS destinationAccountName,
-               COALESCE(SUM(t.amount), 0) AS total
+        SELECT COALESCE(da.parentAccountId, da.id) AS destinationAccountId,
+               COALESCE(parent.name, da.name)      AS destinationAccountName,
+               COALESCE(SUM(t.amount), 0)          AS total
         FROM destination_accounts da
+        LEFT JOIN destination_accounts parent ON parent.id = da.parentAccountId
         LEFT JOIN transactions t
                ON t.destinationAccountId = da.id
               AND t.date BETWEEN :startEpochDay AND :endEpochDay
               AND t.type = 'EXPENSE'
         WHERE da.userId = :userId
-          AND da.type IN ('expense', 'savings', 'investment')
-        GROUP BY da.id, da.name
+          AND (
+              (da.type IN ('expense', 'savings') AND da.parentAccountId IS NULL)
+              OR (da.type = 'investment' AND da.parentAccountId IS NOT NULL)
+          )
+        GROUP BY COALESCE(da.parentAccountId, da.id), COALESCE(parent.name, da.name)
         ORDER BY total DESC
     """)
     fun getExpenseTotalsByDestination(
@@ -127,4 +131,23 @@ interface TransactionDao {
         startEpochDay: Long,
         endEpochDay: Long
     ): List<TransactionEntity>
+
+    @Query("SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE destinationAccountId = :accountId AND type = 'EXPENSE'")
+    suspend fun getTotalInvestedInAccount(accountId: Long): Long
+
+    @Query("SELECT * FROM transactions WHERE destinationAccountId = :destinationAccountId ORDER BY date DESC")
+    fun getByDestinationAccountAll(destinationAccountId: Long): Flow<List<TransactionEntity>>
+
+    @Query("""
+        SELECT t.* FROM transactions t
+        INNER JOIN destination_accounts da ON da.id = t.destinationAccountId
+        WHERE da.parentAccountId = :parentAccountId
+          AND t.date BETWEEN :startEpochDay AND :endEpochDay
+        ORDER BY t.date DESC
+    """)
+    fun getByParentInvestmentAccount(
+        parentAccountId: Long,
+        startEpochDay: Long,
+        endEpochDay: Long
+    ): Flow<List<TransactionEntity>>
 }

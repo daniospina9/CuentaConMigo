@@ -2,6 +2,7 @@ package com.example.cuentaconmigo.domain.usecase
 
 import com.example.cuentaconmigo.domain.model.AccountType
 import com.example.cuentaconmigo.domain.model.DestinationAccount
+import com.example.cuentaconmigo.domain.model.InvestmentSubtype
 import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
 import javax.inject.Inject
 

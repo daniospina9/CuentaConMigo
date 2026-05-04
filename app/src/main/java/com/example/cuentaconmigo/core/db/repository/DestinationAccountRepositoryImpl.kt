@@ -40,4 +40,7 @@ class DestinationAccountRepositoryImpl @Inject constructor(
 
     override fun getInvestmentAccounts(userId: Long): Flow<List<DestinationAccount>> =
         dao.getInvestmentAccounts(userId).map { list -> list.map { it.toDomain() } }
+
+    override fun getSubAccounts(parentAccountId: Long): Flow<List<DestinationAccount>> =
+        dao.getSubAccounts(parentAccountId).map { list -> list.map { it.toDomain() } }
 }

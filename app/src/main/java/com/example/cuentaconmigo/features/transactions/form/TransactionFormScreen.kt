@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.cuentaconmigo.domain.model.DepositAccount
 import com.example.cuentaconmigo.domain.model.DestinationAccount
+import com.example.cuentaconmigo.domain.model.InvestmentSubtype
 import com.example.cuentaconmigo.domain.model.TransactionType
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,7 +30,7 @@ fun TransactionFormScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Nueva transacción") })
+            TopAppBar(title = { Text(if (viewModel.isEditMode) "Editar transacción" else "Nueva transacción") })
         }
     ) { padding ->
         Column(
@@ -69,6 +70,16 @@ fun TransactionFormScreen(
                     isError = state.destinationError,
                     onSelect = { viewModel.setDestinationAccount(it) }
                 )
+
+                // Sub-cuenta de inversión (aparece cuando el destino es de tipo inversión)
+                if (state.destinationIsInvestment) {
+                    SubAccountDropdown(
+                        subAccounts = state.subAccounts,
+                        selected = state.selectedSubAccount,
+                        isError = state.subAccountError,
+                        onSelect = { viewModel.setSubAccount(it) }
+                    )
+                }
             }
 
             // Monto
@@ -168,4 +179,62 @@ private fun DestinationDropdown(
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SubAccountDropdown(
+    subAccounts: List<DestinationAccount>,
+    selected: DestinationAccount?,
+    isError: Boolean,
+    onSelect: (DestinationAccount) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+        OutlinedTextField(
+            value = selected?.let { "${it.name} (${it.investmentSubtype.label()})" } ?: "",
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Subcuenta de inversión *") },
+            isError = isError,
+            supportingText = {
+                if (isError) Text("Selecciona una subcuenta")
+                else if (subAccounts.isEmpty()) Text("Sin subcuentas creadas en esta cuenta")
+            },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            modifier = Modifier.menuAnchor().fillMaxWidth()
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            if (subAccounts.isEmpty()) {
+                DropdownMenuItem(
+                    text = { Text("Sin subcuentas", style = MaterialTheme.typography.bodySmall) },
+                    onClick = {},
+                    enabled = false
+                )
+            } else {
+                subAccounts.forEach { sub ->
+                    DropdownMenuItem(
+                        text = {
+                            Column {
+                                Text(sub.name)
+                                Text(
+                                    sub.investmentSubtype.label(),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        },
+                        onClick = { onSelect(sub); expanded = false }
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun InvestmentSubtype?.label(): String = when (this) {
+    InvestmentSubtype.ASSET   -> "Activo"
+    InvestmentSubtype.LIQUID  -> "Liquidez"
+    InvestmentSubtype.EXPENSE -> "Gasto"
+    null                      -> ""
 }

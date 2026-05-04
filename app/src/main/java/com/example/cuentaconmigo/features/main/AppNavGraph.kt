@@ -9,6 +9,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.cuentaconmigo.features.accounts.deposit.DepositAccountListScreen
 import com.example.cuentaconmigo.features.accounts.destination.DestinationAccountListScreen
+import com.example.cuentaconmigo.features.investments.InvestmentDetailScreen
+import com.example.cuentaconmigo.features.investments.InvestmentSubAccountDetailScreen
 import com.example.cuentaconmigo.features.reports.AccountTransactionsScreen
 import com.example.cuentaconmigo.features.reports.FinancialReportScreen
 import com.example.cuentaconmigo.features.transactions.form.TransactionFormScreen
@@ -27,6 +29,8 @@ object Routes {
     const val ACCOUNT_TRANSACTIONS =
         "account_transactions/{userId}/{destinationAccountId}/{startDay}/{endDay}?accountName={accountName}"
     const val FINANCIAL_REPORT = "financial_report/{userId}"
+    const val INVESTMENT_DETAIL = "investment_detail/{userId}/{accountId}"
+    const val INVESTMENT_SUB_ACCOUNT = "investment_sub_account/{userId}/{subAccountId}"
 
     fun home(userId: Long) = "home/$userId"
     fun depositAccounts(userId: Long) = "deposit_accounts/$userId"
@@ -39,6 +43,8 @@ object Routes {
     fun accountTransactions(userId: Long, destinationAccountId: Long, accountName: String, startDay: Long, endDay: Long) =
         "account_transactions/$userId/$destinationAccountId/$startDay/$endDay?accountName=${Uri.encode(accountName)}"
     fun financialReport(userId: Long) = "financial_report/$userId"
+    fun investmentDetail(userId: Long, accountId: Long) = "investment_detail/$userId/$accountId"
+    fun investmentSubAccount(userId: Long, subAccountId: Long) = "investment_sub_account/$userId/$subAccountId"
 }
 
 @Composable
@@ -140,6 +146,32 @@ fun AppNavGraph() {
             arguments = listOf(navArgument("userId") { type = NavType.LongType })
         ) {
             FinancialReportScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable(
+            route = Routes.INVESTMENT_DETAIL,
+            arguments = listOf(
+                navArgument("userId") { type = NavType.LongType },
+                navArgument("accountId") { type = NavType.LongType }
+            )
+        ) { backStack ->
+            val userId = backStack.arguments!!.getLong("userId")
+            InvestmentDetailScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToSubAccount = { subAccountId ->
+                    navController.navigate(Routes.investmentSubAccount(userId, subAccountId))
+                }
+            )
+        }
+
+        composable(
+            route = Routes.INVESTMENT_SUB_ACCOUNT,
+            arguments = listOf(
+                navArgument("userId") { type = NavType.LongType },
+                navArgument("subAccountId") { type = NavType.LongType }
+            )
+        ) {
+            InvestmentSubAccountDetailScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }

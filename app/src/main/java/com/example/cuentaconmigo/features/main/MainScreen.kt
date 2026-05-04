@@ -56,7 +56,11 @@ fun MainScreen(userId: Long, navController: NavController) {
         ) {
             when (selectedTab) {
                 HomeTab.HOME -> HomeContent(userId = userId, navController = navController)
-                HomeTab.INVESTMENTS -> InvestmentContent()
+                HomeTab.INVESTMENTS -> InvestmentContent(
+                    onNavigateToDetail = { accountId ->
+                        navController.navigate(Routes.investmentDetail(userId, accountId))
+                    }
+                )
                 HomeTab.REPORTS -> ReportsContent(userId = userId, navController = navController)
             }
         }

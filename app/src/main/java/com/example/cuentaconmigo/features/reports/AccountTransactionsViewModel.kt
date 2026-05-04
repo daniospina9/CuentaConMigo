@@ -3,7 +3,9 @@ package com.example.cuentaconmigo.features.reports
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cuentaconmigo.domain.model.AccountType
 import com.example.cuentaconmigo.domain.model.Transaction
+import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
 import com.example.cuentaconmigo.domain.repository.TransactionRepository
 import com.example.cuentaconmigo.domain.usecase.DeleteTransactionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,6 +16,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AccountTransactionsViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
+    private val destinationAccountRepository: DestinationAccountRepository,
     private val deleteTransactionUseCase: DeleteTransactionUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -22,9 +25,15 @@ class AccountTransactionsViewModel @Inject constructor(
     private val startDay: Long = checkNotNull(savedStateHandle["startDay"])
     private val endDay: Long = checkNotNull(savedStateHandle["endDay"])
 
-    val transactions: StateFlow<List<Transaction>> =
-        transactionRepository.getByDestinationAccount(destinationAccountId, startDay, endDay)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val transactions: StateFlow<List<Transaction>> = flow {
+        val account = destinationAccountRepository.getById(destinationAccountId)
+        val txFlow = if (account?.type == AccountType.INVESTMENT && account.parentAccountId == null) {
+            transactionRepository.getByParentInvestmentAccount(destinationAccountId, startDay, endDay)
+        } else {
+            transactionRepository.getByDestinationAccount(destinationAccountId, startDay, endDay)
+        }
+        emitAll(txFlow)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private var pendingDelete: Transaction? = null
 
