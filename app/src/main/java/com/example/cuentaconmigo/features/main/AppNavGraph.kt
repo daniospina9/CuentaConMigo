@@ -21,21 +21,23 @@ object Routes {
     const val HOME = "home/{userId}"
     const val DEPOSIT_ACCOUNTS = "deposit_accounts/{userId}"
     const val DESTINATION_ACCOUNTS = "destination_accounts/{userId}"
-    const val TRANSACTION_FORM = "transaction_form/{userId}/{type}"
+    const val TRANSACTION_FORM = "transaction_form/{userId}/{type}?transactionId={transactionId}"
     const val VOICE_INPUT = "voice_input/{userId}"
     const val TRANSFER = "transfer/{userId}"
     const val ACCOUNT_TRANSACTIONS =
-        "account_transactions/{destinationAccountId}/{startDay}/{endDay}?accountName={accountName}"
+        "account_transactions/{userId}/{destinationAccountId}/{startDay}/{endDay}?accountName={accountName}"
     const val FINANCIAL_REPORT = "financial_report/{userId}"
 
     fun home(userId: Long) = "home/$userId"
     fun depositAccounts(userId: Long) = "deposit_accounts/$userId"
     fun destinationAccounts(userId: Long) = "destination_accounts/$userId"
     fun transactionForm(userId: Long, type: String = "EXPENSE") = "transaction_form/$userId/$type"
+    fun transactionFormEdit(userId: Long, transactionId: Long, type: String) =
+        "transaction_form/$userId/$type?transactionId=$transactionId"
     fun voiceInput(userId: Long) = "voice_input/$userId"
     fun transfer(userId: Long) = "transfer/$userId"
-    fun accountTransactions(destinationAccountId: Long, accountName: String, startDay: Long, endDay: Long) =
-        "account_transactions/$destinationAccountId/$startDay/$endDay?accountName=${Uri.encode(accountName)}"
+    fun accountTransactions(userId: Long, destinationAccountId: Long, accountName: String, startDay: Long, endDay: Long) =
+        "account_transactions/$userId/$destinationAccountId/$startDay/$endDay?accountName=${Uri.encode(accountName)}"
     fun financialReport(userId: Long) = "financial_report/$userId"
 }
 
@@ -81,7 +83,8 @@ fun AppNavGraph() {
             route = Routes.TRANSACTION_FORM,
             arguments = listOf(
                 navArgument("userId") { type = NavType.LongType },
-                navArgument("type") { type = NavType.StringType }
+                navArgument("type") { type = NavType.StringType },
+                navArgument("transactionId") { type = NavType.LongType; defaultValue = 0L }
             )
         ) {
             TransactionFormScreen(
@@ -114,16 +117,21 @@ fun AppNavGraph() {
         composable(
             route = Routes.ACCOUNT_TRANSACTIONS,
             arguments = listOf(
+                navArgument("userId") { type = NavType.LongType },
                 navArgument("destinationAccountId") { type = NavType.LongType },
                 navArgument("startDay") { type = NavType.LongType },
                 navArgument("endDay") { type = NavType.LongType },
                 navArgument("accountName") { type = NavType.StringType; defaultValue = "Cuenta" }
             )
         ) { backStack ->
+            val userId = backStack.arguments!!.getLong("userId")
             val accountName = backStack.arguments?.getString("accountName") ?: "Cuenta"
             AccountTransactionsScreen(
                 accountName = accountName,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToEdit = { tx ->
+                    navController.navigate(Routes.transactionFormEdit(userId, tx.id, tx.type.name))
+                }
             )
         }
 

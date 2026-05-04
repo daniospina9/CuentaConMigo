@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.example.cuentaconmigo.core.db.entities.TransactionEntity
 import com.example.cuentaconmigo.domain.model.AccountTotal
 import kotlinx.coroutines.flow.Flow
@@ -13,6 +14,12 @@ import kotlinx.coroutines.flow.Flow
 interface TransactionDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(transaction: TransactionEntity): Long
+
+    @Update
+    suspend fun update(transaction: TransactionEntity)
+
+    @Query("SELECT * FROM transactions WHERE id = :id")
+    suspend fun getById(id: Long): TransactionEntity?
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertAll(transactions: List<TransactionEntity>)
@@ -45,7 +52,7 @@ interface TransactionDao {
               AND t.date BETWEEN :startEpochDay AND :endEpochDay
               AND t.type = 'EXPENSE'
         WHERE da.userId = :userId
-          AND da.type IN ('expense', 'savings')
+          AND da.type IN ('expense', 'savings', 'investment')
         GROUP BY da.id, da.name
         ORDER BY total DESC
     """)

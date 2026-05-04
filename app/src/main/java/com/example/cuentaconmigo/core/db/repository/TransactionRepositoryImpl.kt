@@ -104,4 +104,10 @@ class TransactionRepositoryImpl @Inject constructor(
 
     override suspend fun getNonTransferTransactions(userId: Long, startDay: LocalDate, endDay: LocalDate): List<Transaction> =
         dao.getNonTransferTransactions(userId, startDay.toEpochDay(), endDay.toEpochDay()).map { it.toDomain() }
+
+    override suspend fun update(transaction: Transaction) =
+        dao.update(transaction.toEntity())
+
+    override suspend fun getById(id: Long): Transaction? =
+        dao.getById(id)?.toDomain()
 }

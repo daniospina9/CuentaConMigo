@@ -83,6 +83,7 @@ fun ReportsContent(
                             val (startDay, endDay) = viewModel.currentDateRange()
                             navController.navigate(
                                 Routes.accountTransactions(
+                                    userId = userId,
                                     destinationAccountId = item.destinationAccountId,
                                     accountName = item.destinationAccountName,
                                     startDay = startDay,

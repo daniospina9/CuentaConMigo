@@ -40,4 +40,6 @@ interface TransactionRepository {
     suspend fun getPeriodIncome(depositAccountId: Long, startDay: LocalDate, endDay: LocalDate): Long
     suspend fun getPeriodExpense(depositAccountId: Long, startDay: LocalDate, endDay: LocalDate): Long
     suspend fun getNonTransferTransactions(userId: Long, startDay: LocalDate, endDay: LocalDate): List<Transaction>
+    suspend fun update(transaction: Transaction)
+    suspend fun getById(id: Long): Transaction?
 }
