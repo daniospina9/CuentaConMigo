@@ -25,7 +25,7 @@ import com.example.cuentaconmigo.core.db.entities.UserEntity
         TransactionEntity::class,
         InvestmentFluctuationEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -50,6 +50,13 @@ abstract class AppDatabase : RoomDatabase() {
                 database.execSQL(
                     "ALTER TABLE destination_accounts ADD COLUMN parentAccountId INTEGER"
                 )
+            }
+        }
+
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("UPDATE transactions SET amount = amount * 100")
+                database.execSQL("UPDATE investment_fluctuations SET amount = amount * 100")
             }
         }
     }

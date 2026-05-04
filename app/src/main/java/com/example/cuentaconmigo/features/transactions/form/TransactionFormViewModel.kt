@@ -3,6 +3,7 @@ package com.example.cuentaconmigo.features.transactions.form
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cuentaconmigo.core.util.parseToCentavos
 import com.example.cuentaconmigo.domain.model.AccountType
 import com.example.cuentaconmigo.domain.model.DepositAccount
 import com.example.cuentaconmigo.domain.model.DestinationAccount
@@ -144,7 +145,7 @@ class TransactionFormViewModel @Inject constructor(
 
     fun submit() {
         val s = _state.value
-        val amount = s.amountText.filter { it.isDigit() }.toLongOrNull() ?: 0L
+        val amount = s.amountText.parseToCentavos() ?: 0L
         val hasAmountError = amount <= 0L
         val hasDepositError = s.selectedDepositAccount == null
         val hasDestinationError = s.type == TransactionType.EXPENSE && s.selectedDestinationAccount == null

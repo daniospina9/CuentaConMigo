@@ -16,6 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.cuentaconmigo.core.util.filterAmountInput
+import com.example.cuentaconmigo.core.util.parseToCentavos
 import com.example.cuentaconmigo.core.util.toCopString
 import com.example.cuentaconmigo.core.util.toSignedCopString
 import com.example.cuentaconmigo.domain.model.InvestmentFluctuation
@@ -258,7 +260,8 @@ private fun SubAccountFluctuationDialog(title: String, positiveLabel: String, ne
     var isPositive by remember { mutableStateOf(true) }
     var amountText by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    val isValid = amountText.filter { it.isDigit() }.toLongOrNull()?.let { it > 0 } == true
+    val centavos = amountText.parseToCentavos()
+    val isValid = centavos != null && centavos > 0
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -269,15 +272,21 @@ private fun SubAccountFluctuationDialog(title: String, positiveLabel: String, ne
                     FilterChip(selected = isPositive, onClick = { isPositive = true }, label = { Text(positiveLabel) })
                     FilterChip(selected = !isPositive, onClick = { isPositive = false }, label = { Text(negativeLabel) })
                 }
-                OutlinedTextField(value = amountText, onValueChange = { amountText = it }, label = { Text("Monto (COP)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(
+                    value = amountText,
+                    onValueChange = { amountText = filterAmountInput(amountText, it) },
+                    label = { Text("Monto (COP)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
                 OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Descripción (opcional)") },
                     maxLines = 2, modifier = Modifier.fillMaxWidth())
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { val raw = amountText.filter { it.isDigit() }.toLong(); onConfirm(if (isPositive) raw else -raw, description.ifBlank { null }) },
+                onClick = { val raw = centavos!!; onConfirm(if (isPositive) raw else -raw, description.ifBlank { null }) },
                 enabled = isValid
             ) { Text("Guardar") }
         },

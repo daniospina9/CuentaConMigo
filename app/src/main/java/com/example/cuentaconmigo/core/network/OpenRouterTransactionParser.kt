@@ -42,7 +42,7 @@ class OpenRouterTransactionParser @Inject constructor(
                 depositAccountName     = obj.optString("depositAccount").ifBlank { null },
                 toDepositAccountName   = obj.optString("toDepositAccount").ifBlank { null },
                 destinationAccountName = obj.optString("destinationAccount").ifBlank { null },
-                amount      = obj.optLong("amount").takeIf { it > 0 },
+                amount      = obj.optDouble("amount").takeIf { it > 0 }?.let { (it * 100).toLong() },
                 description = obj.optString("description").ifBlank { null }
             )
         } catch (_: Exception) {

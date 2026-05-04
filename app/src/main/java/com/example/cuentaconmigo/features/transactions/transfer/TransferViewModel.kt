@@ -3,6 +3,7 @@ package com.example.cuentaconmigo.features.transactions.transfer
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cuentaconmigo.core.util.parseToCentavos
 import com.example.cuentaconmigo.domain.model.DepositAccount
 import com.example.cuentaconmigo.domain.usecase.GetDepositAccountsUseCase
 import com.example.cuentaconmigo.domain.usecase.InsertTransferUseCase
@@ -60,7 +61,7 @@ class TransferViewModel @Inject constructor(
 
     fun submit() {
         val s = _state.value
-        val amount = s.amountText.filter { it.isDigit() }.toLongOrNull() ?: 0L
+        val amount = s.amountText.parseToCentavos() ?: 0L
 
         val fromError = s.fromAccount == null
         val toError = s.toAccount == null
