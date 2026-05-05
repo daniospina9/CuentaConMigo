@@ -13,7 +13,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.cuentaconmigo.core.util.filterAmountInput
@@ -434,8 +436,8 @@ private fun EditInitialValueDialog(
     onConfirm: (Long) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var amountText by remember { mutableStateOf("") }
-    val centavos = amountText.parseToCentavos()
+    var amountTfv by remember { mutableStateOf(TextFieldValue("")) }
+    val centavos = amountTfv.text.parseToCentavos()
     val isValid = centavos != null && centavos >= 0
 
     AlertDialog(
@@ -449,8 +451,8 @@ private fun EditInitialValueDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 OutlinedTextField(
-                    value = amountText,
-                    onValueChange = { amountText = filterAmountInput(amountText, it) },
+                    value = amountTfv,
+                    onValueChange = { amountTfv = filterAmountInput(amountTfv, it) },
                     label = { Text("Nuevo valor inicial (COP)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
@@ -472,11 +474,11 @@ private fun InvestDialog(
     onConfirm: (totalSpent: Long, assetValueIncrease: Long, description: String?) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var totalSpentText by remember { mutableStateOf("") }
-    var assetIncreaseText by remember { mutableStateOf("") }
+    var totalSpentTfv by remember { mutableStateOf(TextFieldValue("")) }
+    var assetIncreaseTfv by remember { mutableStateOf(TextFieldValue("")) }
     var description by remember { mutableStateOf("") }
-    val totalSpentCentavos = totalSpentText.parseToCentavos()
-    val assetIncreaseCentavos = assetIncreaseText.parseToCentavos() ?: 0L
+    val totalSpentCentavos = totalSpentTfv.text.parseToCentavos()
+    val assetIncreaseCentavos = assetIncreaseTfv.text.parseToCentavos() ?: 0L
     val isValid = totalSpentCentavos != null && totalSpentCentavos > 0 &&
             assetIncreaseCentavos >= 0 && assetIncreaseCentavos <= (totalSpentCentavos ?: 0L)
 
@@ -486,16 +488,16 @@ private fun InvestDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
-                    value = totalSpentText,
-                    onValueChange = { totalSpentText = filterAmountInput(totalSpentText, it) },
+                    value = totalSpentTfv,
+                    onValueChange = { totalSpentTfv = filterAmountInput(totalSpentTfv, it) },
                     label = { Text("Total gastado (COP)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
-                    value = assetIncreaseText,
-                    onValueChange = { assetIncreaseText = filterAmountInput(assetIncreaseText, it) },
+                    value = assetIncreaseTfv,
+                    onValueChange = { assetIncreaseTfv = filterAmountInput(assetIncreaseTfv, it) },
                     label = { Text("Aumenta valor del activo (COP, ≤ total gastado)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
@@ -533,12 +535,12 @@ private fun AssetIncomeDialog(
     onConfirm: (amount: Long, assetValueDelta: Long, description: String?) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var amountText by remember { mutableStateOf("") }
+    var amountTfv by remember { mutableStateOf(TextFieldValue("")) }
     var affectsValue by remember { mutableStateOf(false) }
-    var valueDeltaText by remember { mutableStateOf("") }
+    var valueDeltaTfv by remember { mutableStateOf(TextFieldValue("")) }
     var description by remember { mutableStateOf("") }
-    val centavos = amountText.parseToCentavos()
-    val valueDeltaCentavos = if (affectsValue) valueDeltaText.parseToCentavos() ?: 0L else 0L
+    val centavos = amountTfv.text.parseToCentavos()
+    val valueDeltaCentavos = if (affectsValue) valueDeltaTfv.text.parseToCentavos() ?: 0L else 0L
     val isValid = centavos != null && centavos > 0
 
     AlertDialog(
@@ -547,8 +549,8 @@ private fun AssetIncomeDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
-                    value = amountText,
-                    onValueChange = { amountText = filterAmountInput(amountText, it) },
+                    value = amountTfv,
+                    onValueChange = { amountTfv = filterAmountInput(amountTfv, it) },
                     label = { Text("Monto ingresado (COP)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
@@ -564,8 +566,8 @@ private fun AssetIncomeDialog(
                 }
                 if (affectsValue) {
                     OutlinedTextField(
-                        value = valueDeltaText,
-                        onValueChange = { valueDeltaText = filterAmountInput(valueDeltaText, it) },
+                        value = valueDeltaTfv,
+                        onValueChange = { valueDeltaTfv = filterAmountInput(valueDeltaTfv, it) },
                         label = { Text("Cambio en valor del activo (COP)") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         singleLine = true,
@@ -597,8 +599,8 @@ private fun CreateLiabilityDialog(
     onDismiss: () -> Unit
 ) {
     var description by remember { mutableStateOf("") }
-    var amountText by remember { mutableStateOf("") }
-    val centavos = amountText.parseToCentavos()
+    var amountTfv by remember { mutableStateOf(TextFieldValue("")) }
+    val centavos = amountTfv.text.parseToCentavos()
     val isValid = description.isNotBlank() && centavos != null && centavos > 0
 
     AlertDialog(
@@ -614,8 +616,8 @@ private fun CreateLiabilityDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
-                    value = amountText,
-                    onValueChange = { amountText = filterAmountInput(amountText, it) },
+                    value = amountTfv,
+                    onValueChange = { amountTfv = filterAmountInput(amountTfv, it) },
                     label = { Text("Monto (COP)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
@@ -641,10 +643,10 @@ private fun AssetWithdrawDialog(
     onDismiss: () -> Unit
 ) {
     var selectedAccount by remember { mutableStateOf(depositAccounts.firstOrNull()) }
-    var amountText by remember { mutableStateOf("") }
+    var amountTfv by remember { mutableStateOf(TextFieldValue("")) }
     var description by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
-    val centavos = amountText.parseToCentavos()
+    val centavos = amountTfv.text.parseToCentavos()
     val isValid = centavos != null && centavos > 0 && selectedAccount != null
 
     AlertDialog(
@@ -673,8 +675,8 @@ private fun AssetWithdrawDialog(
                     }
                 }
                 OutlinedTextField(
-                    value = amountText,
-                    onValueChange = { amountText = filterAmountInput(amountText, it) },
+                    value = amountTfv,
+                    onValueChange = { amountTfv = filterAmountInput(amountTfv, it) },
                     label = { Text("Monto (COP)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,

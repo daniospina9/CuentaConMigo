@@ -7,7 +7,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.cuentaconmigo.core.util.filterAmountInput
@@ -84,9 +86,17 @@ fun TransactionFormScreen(
             }
 
             // Monto
+            var amountTfv by remember { mutableStateOf(TextFieldValue(state.amountText)) }
+            LaunchedEffect(state.amountText) {
+                if (amountTfv.text != state.amountText)
+                    amountTfv = TextFieldValue(state.amountText, TextRange(state.amountText.length))
+            }
             OutlinedTextField(
-                value = state.amountText,
-                onValueChange = { viewModel.setAmount(filterAmountInput(state.amountText, it)) },
+                value = amountTfv,
+                onValueChange = { new ->
+                    amountTfv = filterAmountInput(amountTfv, new)
+                    viewModel.setAmount(amountTfv.text)
+                },
                 label = { Text("Monto (COP) *") },
                 isError = state.amountError,
                 supportingText = { if (state.amountError) Text("Ingresa un monto válido") },

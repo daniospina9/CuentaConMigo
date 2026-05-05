@@ -13,7 +13,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.cuentaconmigo.core.util.filterAmountInput
@@ -287,10 +289,10 @@ private fun WithdrawToDepositDialog(
     onDismiss: () -> Unit
 ) {
     var selectedAccount by remember { mutableStateOf(depositAccounts.firstOrNull()) }
-    var amountText by remember { mutableStateOf("") }
+    var amountTfv by remember { mutableStateOf(TextFieldValue("")) }
     var description by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
-    val centavos = amountText.parseToCentavos()
+    val centavos = amountTfv.text.parseToCentavos()
     val isValid = centavos != null && centavos > 0 && selectedAccount != null
 
     AlertDialog(
@@ -317,8 +319,8 @@ private fun WithdrawToDepositDialog(
                     }
                 }
                 OutlinedTextField(
-                    value = amountText,
-                    onValueChange = { amountText = filterAmountInput(amountText, it) },
+                    value = amountTfv,
+                    onValueChange = { amountTfv = filterAmountInput(amountTfv, it) },
                     label = { Text("Monto (COP)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
@@ -346,9 +348,9 @@ private fun WithdrawToDepositDialog(
 @Composable
 private fun SubAccountFluctuationDialog(title: String, positiveLabel: String, negativeLabel: String, onConfirm: (Long, String?) -> Unit, onDismiss: () -> Unit) {
     var isPositive by remember { mutableStateOf(true) }
-    var amountText by remember { mutableStateOf("") }
+    var amountTfv by remember { mutableStateOf(TextFieldValue("")) }
     var description by remember { mutableStateOf("") }
-    val centavos = amountText.parseToCentavos()
+    val centavos = amountTfv.text.parseToCentavos()
     val isValid = centavos != null && centavos > 0
 
     AlertDialog(
@@ -361,8 +363,8 @@ private fun SubAccountFluctuationDialog(title: String, positiveLabel: String, ne
                     FilterChip(selected = !isPositive, onClick = { isPositive = false }, label = { Text(negativeLabel) })
                 }
                 OutlinedTextField(
-                    value = amountText,
-                    onValueChange = { amountText = filterAmountInput(amountText, it) },
+                    value = amountTfv,
+                    onValueChange = { amountTfv = filterAmountInput(amountTfv, it) },
                     label = { Text("Monto (COP)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
