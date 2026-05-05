@@ -32,5 +32,6 @@ data class InvestmentFluctuationEntity(
     val destinationAccountId: Long,
     val amount: Long,           // puede ser negativo
     val date: Long,             // LocalDate.toEpochDay()
-    val description: String? = null
+    val description: String? = null,
+    val withdrawalGroupId: String? = null
 )

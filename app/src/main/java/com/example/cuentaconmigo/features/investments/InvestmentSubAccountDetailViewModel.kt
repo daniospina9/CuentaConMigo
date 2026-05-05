@@ -3,13 +3,16 @@ package com.example.cuentaconmigo.features.investments
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cuentaconmigo.domain.model.DepositAccount
 import com.example.cuentaconmigo.domain.model.DestinationAccount
 import com.example.cuentaconmigo.domain.model.InvestmentFluctuation
 import com.example.cuentaconmigo.domain.model.InvestmentSubtype
 import com.example.cuentaconmigo.domain.model.Transaction
+import com.example.cuentaconmigo.domain.model.TransactionType
 import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
 import com.example.cuentaconmigo.domain.repository.InvestmentFluctuationRepository
 import com.example.cuentaconmigo.domain.repository.TransactionRepository
+import com.example.cuentaconmigo.domain.usecase.GetDepositAccountsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -21,6 +24,7 @@ class InvestmentSubAccountDetailViewModel @Inject constructor(
     private val destinationAccountRepository: DestinationAccountRepository,
     private val investmentFluctuationRepository: InvestmentFluctuationRepository,
     private val transactionRepository: TransactionRepository,
+    private val getDepositAccountsUseCase: GetDepositAccountsUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -69,6 +73,10 @@ class InvestmentSubAccountDetailViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    val depositAccounts: StateFlow<List<DepositAccount>> =
+        getDepositAccountsUseCase(userId)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
@@ -97,8 +105,44 @@ class InvestmentSubAccountDetailViewModel @Inject constructor(
 
     fun deleteFluctuation(fluctuation: InvestmentFluctuation) {
         viewModelScope.launch {
-            runCatching { investmentFluctuationRepository.delete(fluctuation) }
-                .onFailure { _errorMessage.value = it.message }
+            runCatching {
+                investmentFluctuationRepository.delete(fluctuation)
+                fluctuation.withdrawalGroupId?.let { transactionRepository.deleteTransfer(it) }
+            }.onFailure { _errorMessage.value = it.message }
+        }
+    }
+
+    fun withdraw(toDepositAccountId: Long, amount: Long, description: String?) {
+        viewModelScope.launch {
+            runCatching {
+                val groupId = java.util.UUID.randomUUID().toString()
+                val accountName = _account.value?.name ?: "Inversión"
+                val desc = description?.ifBlank { null } ?: "Retiro de $accountName"
+                investmentFluctuationRepository.insert(
+                    InvestmentFluctuation(
+                        id = 0,
+                        userId = userId,
+                        destinationAccountId = subAccountId,
+                        amount = -amount,
+                        date = LocalDate.now(),
+                        description = desc,
+                        withdrawalGroupId = groupId
+                    )
+                )
+                transactionRepository.insert(
+                    Transaction(
+                        id = 0,
+                        userId = userId,
+                        depositAccountId = toDepositAccountId,
+                        destinationAccountId = null,
+                        type = TransactionType.INCOME,
+                        amount = amount,
+                        date = LocalDate.now(),
+                        description = desc,
+                        transferGroupId = groupId
+                    )
+                )
+            }.onFailure { _errorMessage.value = it.message }
         }
     }
 

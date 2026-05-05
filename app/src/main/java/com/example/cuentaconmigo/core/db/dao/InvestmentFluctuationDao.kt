@@ -29,4 +29,7 @@ interface InvestmentFluctuationDao {
         WHERE userId = :userId AND destinationAccountId = :accountId
     """)
     fun getBalance(userId: Long, accountId: Long): Flow<Long>
+
+    @Query("DELETE FROM investment_fluctuations WHERE withdrawalGroupId = :withdrawalGroupId")
+    suspend fun deleteByWithdrawalGroupId(withdrawalGroupId: String)
 }

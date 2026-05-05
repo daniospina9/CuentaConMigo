@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cuentaconmigo.domain.model.Transaction
 import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
+import com.example.cuentaconmigo.domain.repository.InvestmentFluctuationRepository
 import com.example.cuentaconmigo.domain.repository.TransactionRepository
 import com.example.cuentaconmigo.domain.usecase.DeleteTransactionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,6 +23,7 @@ data class DepositTransactionItem(
 class DepositAccountTransactionsViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
     private val destinationAccountRepository: DestinationAccountRepository,
+    private val investmentFluctuationRepository: InvestmentFluctuationRepository,
     private val deleteTransactionUseCase: DeleteTransactionUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -61,8 +63,10 @@ class DepositAccountTransactionsViewModel @Inject constructor(
     fun confirmDelete() {
         val item = pendingDelete ?: return
         viewModelScope.launch {
-            if (item.isTransfer && item.transaction.transferGroupId != null) {
-                transactionRepository.deleteTransfer(item.transaction.transferGroupId)
+            val groupId = item.transaction.transferGroupId
+            if (item.isTransfer && groupId != null) {
+                transactionRepository.deleteTransfer(groupId)
+                investmentFluctuationRepository.deleteByWithdrawalGroupId(groupId)
             } else {
                 deleteTransactionUseCase(item.transaction)
             }
