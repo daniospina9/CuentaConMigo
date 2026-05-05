@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.cuentaconmigo.core.util.filterAmountInput
 import com.example.cuentaconmigo.domain.model.DepositAccount
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,11 +70,11 @@ fun TransferScreen(
 
             OutlinedTextField(
                 value = state.amountText,
-                onValueChange = { viewModel.setAmount(it) },
+                onValueChange = { viewModel.setAmount(filterAmountInput(state.amountText, it)) },
                 label = { Text("Monto (COP) *") },
                 isError = state.amountError,
                 supportingText = { if (state.amountError) Text("Ingresa un monto válido") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )

@@ -11,4 +11,6 @@ interface DestinationAccountRepository {
     suspend fun delete(account: DestinationAccount): Result<Unit>
     suspend fun getById(id: Long): DestinationAccount?
     suspend fun getInvestmentAccount(userId: Long): DestinationAccount?
+    fun getInvestmentAccounts(userId: Long): Flow<List<DestinationAccount>>
+    fun getSubAccounts(parentAccountId: Long): Flow<List<DestinationAccount>>
 }

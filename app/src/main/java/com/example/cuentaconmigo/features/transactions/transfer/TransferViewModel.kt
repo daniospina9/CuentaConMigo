@@ -3,9 +3,10 @@ package com.example.cuentaconmigo.features.transactions.transfer
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cuentaconmigo.core.util.parseToCentavos
 import com.example.cuentaconmigo.domain.model.DepositAccount
-import com.example.cuentaconmigo.domain.repository.DepositAccountRepository
-import com.example.cuentaconmigo.domain.repository.TransactionRepository
+import com.example.cuentaconmigo.domain.usecase.GetDepositAccountsUseCase
+import com.example.cuentaconmigo.domain.usecase.InsertTransferUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -28,8 +29,8 @@ data class TransferState(
 
 @HiltViewModel
 class TransferViewModel @Inject constructor(
-    private val transactionRepository: TransactionRepository,
-    private val depositAccountRepository: DepositAccountRepository,
+    private val insertTransferUseCase: InsertTransferUseCase,
+    private val getDepositAccountsUseCase: GetDepositAccountsUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -40,7 +41,7 @@ class TransferViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            depositAccountRepository.getByUser(userId).collect { accounts ->
+            getDepositAccountsUseCase(userId).collect { accounts ->
                 _state.update { it.copy(depositAccounts = accounts) }
             }
         }
@@ -60,7 +61,7 @@ class TransferViewModel @Inject constructor(
 
     fun submit() {
         val s = _state.value
-        val amount = s.amountText.filter { it.isDigit() }.toLongOrNull() ?: 0L
+        val amount = s.amountText.parseToCentavos() ?: 0L
 
         val fromError = s.fromAccount == null
         val toError = s.toAccount == null
@@ -81,7 +82,7 @@ class TransferViewModel @Inject constructor(
 
         viewModelScope.launch {
             runCatching {
-                transactionRepository.insertTransfer(
+                insertTransferUseCase(
                     userId = userId,
                     fromAccountId = s.fromAccount!!.id,
                     toAccountId = s.toAccount!!.id,

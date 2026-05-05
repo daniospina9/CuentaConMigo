@@ -22,5 +22,7 @@ data class DestinationAccountEntity(
     val userId: Long,
     val name: String,
     val type: String,       // "expense" | "savings" | "investment"
-    val isDefault: Boolean = false
+    val isDefault: Boolean = false,
+    val investmentSubtype: String? = null,
+    val parentAccountId: Long? = null   // null = top-level; non-null = investment sub-account
 )

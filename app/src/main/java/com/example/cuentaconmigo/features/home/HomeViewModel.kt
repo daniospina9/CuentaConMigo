@@ -4,9 +4,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cuentaconmigo.domain.model.DepositAccount
-import com.example.cuentaconmigo.domain.repository.DepositAccountRepository
 import com.example.cuentaconmigo.domain.repository.TransactionRepository
 import com.example.cuentaconmigo.domain.repository.UserRepository
+import com.example.cuentaconmigo.domain.usecase.GetDepositAccountsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -16,7 +16,7 @@ data class AccountWithBalance(val account: DepositAccount, val balance: Long)
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val depositAccountRepository: DepositAccountRepository,
+    private val getDepositAccountsUseCase: GetDepositAccountsUseCase,
     private val transactionRepository: TransactionRepository,
     private val userRepository: UserRepository,
     savedStateHandle: SavedStateHandle
@@ -28,7 +28,7 @@ class HomeViewModel @Inject constructor(
     val userName: StateFlow<String> = _userName.asStateFlow()
 
     val accountsWithBalances: StateFlow<List<AccountWithBalance>> =
-        depositAccountRepository.getByUser(userId)
+        getDepositAccountsUseCase(userId)
             .flatMapLatest { accounts ->
                 if (accounts.isEmpty()) flowOf(emptyList())
                 else combine(accounts.map { acc ->
