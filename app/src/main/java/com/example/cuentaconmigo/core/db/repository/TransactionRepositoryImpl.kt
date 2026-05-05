@@ -122,4 +122,7 @@ class TransactionRepositoryImpl @Inject constructor(
 
     override fun getTotalExpensesForAccountFlow(accountId: Long): Flow<Long> =
         dao.getTotalExpensesForAccountFlow(accountId)
+
+    override fun getAllByDepositAccount(depositAccountId: Long): Flow<List<Transaction>> =
+        dao.getAllByDepositAccount(depositAccountId).map { list -> list.map { it.toDomain() } }
 }

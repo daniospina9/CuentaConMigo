@@ -63,7 +63,10 @@ fun HomeContent(
             )
         } else {
             accounts.forEach { (account, balance) ->
-                Card(Modifier.fillMaxWidth()) {
+                Card(
+                    Modifier.fillMaxWidth(),
+                    onClick = { navController.navigate(Routes.depositAccountTransactions(userId, account.id, account.name)) }
+                ) {
                     Row(
                         Modifier
                             .padding(16.dp)

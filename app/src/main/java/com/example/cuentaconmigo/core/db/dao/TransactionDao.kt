@@ -141,6 +141,9 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE destinationAccountId = :destinationAccountId ORDER BY date DESC")
     fun getByDestinationAccountAll(destinationAccountId: Long): Flow<List<TransactionEntity>>
 
+    @Query("SELECT * FROM transactions WHERE depositAccountId = :depositAccountId ORDER BY date DESC")
+    fun getAllByDepositAccount(depositAccountId: Long): Flow<List<TransactionEntity>>
+
     @Query("""
         SELECT t.* FROM transactions t
         INNER JOIN destination_accounts da ON da.id = t.destinationAccountId
