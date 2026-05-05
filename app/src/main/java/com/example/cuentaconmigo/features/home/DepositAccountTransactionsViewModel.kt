@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cuentaconmigo.domain.model.Transaction
+import com.example.cuentaconmigo.domain.repository.AssetOperationRepository
 import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
 import com.example.cuentaconmigo.domain.repository.InvestmentFluctuationRepository
 import com.example.cuentaconmigo.domain.repository.TransactionRepository
@@ -24,6 +25,7 @@ class DepositAccountTransactionsViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
     private val destinationAccountRepository: DestinationAccountRepository,
     private val investmentFluctuationRepository: InvestmentFluctuationRepository,
+    private val assetOperationRepository: AssetOperationRepository,
     private val deleteTransactionUseCase: DeleteTransactionUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -67,6 +69,7 @@ class DepositAccountTransactionsViewModel @Inject constructor(
             if (item.isTransfer && groupId != null) {
                 transactionRepository.deleteTransfer(groupId)
                 investmentFluctuationRepository.deleteByWithdrawalGroupId(groupId)
+                assetOperationRepository.deleteByWithdrawalGroupId(groupId)
             } else {
                 deleteTransactionUseCase(item.transaction)
             }

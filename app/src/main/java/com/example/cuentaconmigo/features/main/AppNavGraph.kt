@@ -10,6 +10,7 @@ import androidx.navigation.navArgument
 import com.example.cuentaconmigo.features.accounts.deposit.DepositAccountListScreen
 import com.example.cuentaconmigo.features.accounts.destination.DestinationAccountListScreen
 import com.example.cuentaconmigo.features.home.DepositAccountTransactionsScreen
+import com.example.cuentaconmigo.features.investments.AssetSubAccountDetailScreen
 import com.example.cuentaconmigo.features.investments.InvestmentDetailScreen
 import com.example.cuentaconmigo.features.investments.InvestmentSubAccountDetailScreen
 import com.example.cuentaconmigo.features.reports.AccountTransactionsScreen
@@ -32,6 +33,7 @@ object Routes {
     const val FINANCIAL_REPORT = "financial_report/{userId}"
     const val INVESTMENT_DETAIL = "investment_detail/{userId}/{accountId}"
     const val INVESTMENT_SUB_ACCOUNT = "investment_sub_account/{userId}/{subAccountId}"
+    const val ASSET_SUB_ACCOUNT = "asset_sub_account/{userId}/{subAccountId}"
     const val DEPOSIT_ACCOUNT_TRANSACTIONS =
         "deposit_account_transactions/{userId}/{depositAccountId}?accountName={accountName}"
 
@@ -48,6 +50,7 @@ object Routes {
     fun financialReport(userId: Long) = "financial_report/$userId"
     fun investmentDetail(userId: Long, accountId: Long) = "investment_detail/$userId/$accountId"
     fun investmentSubAccount(userId: Long, subAccountId: Long) = "investment_sub_account/$userId/$subAccountId"
+    fun assetSubAccount(userId: Long, subAccountId: Long) = "asset_sub_account/$userId/$subAccountId"
     fun depositAccountTransactions(userId: Long, depositAccountId: Long, accountName: String) =
         "deposit_account_transactions/$userId/$depositAccountId?accountName=${Uri.encode(accountName)}"
 }
@@ -184,6 +187,9 @@ fun AppNavGraph() {
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToSubAccount = { subAccountId ->
                     navController.navigate(Routes.investmentSubAccount(userId, subAccountId))
+                },
+                onNavigateToAssetSubAccount = { subAccountId ->
+                    navController.navigate(Routes.assetSubAccount(userId, subAccountId))
                 }
             )
         }
@@ -196,6 +202,16 @@ fun AppNavGraph() {
             )
         ) {
             InvestmentSubAccountDetailScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable(
+            route = Routes.ASSET_SUB_ACCOUNT,
+            arguments = listOf(
+                navArgument("userId") { type = NavType.LongType },
+                navArgument("subAccountId") { type = NavType.LongType }
+            )
+        ) {
+            AssetSubAccountDetailScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }

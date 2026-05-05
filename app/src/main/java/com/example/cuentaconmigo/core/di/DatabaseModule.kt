@@ -3,6 +3,8 @@ package com.example.cuentaconmigo.core.di
 import android.content.Context
 import androidx.room.Room
 import com.example.cuentaconmigo.core.db.AppDatabase
+import com.example.cuentaconmigo.core.db.dao.AssetLiabilityDao
+import com.example.cuentaconmigo.core.db.dao.AssetOperationDao
 import com.example.cuentaconmigo.core.db.dao.DepositAccountDao
 import com.example.cuentaconmigo.core.db.dao.DestinationAccountDao
 import com.example.cuentaconmigo.core.db.dao.InvestmentFluctuationDao
@@ -23,7 +25,13 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "cuentaconmigo.db")
-            .addMigrations(AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6)
+            .addMigrations(
+                AppDatabase.MIGRATION_2_3,
+                AppDatabase.MIGRATION_3_4,
+                AppDatabase.MIGRATION_4_5,
+                AppDatabase.MIGRATION_5_6,
+                AppDatabase.MIGRATION_6_7
+            )
             .fallbackToDestructiveMigration()
             .build()
 
@@ -41,4 +49,10 @@ object DatabaseModule {
 
     @Provides
     fun provideInvestmentFluctuationDao(db: AppDatabase): InvestmentFluctuationDao = db.investmentFluctuationDao()
+
+    @Provides
+    fun provideAssetOperationDao(db: AppDatabase): AssetOperationDao = db.assetOperationDao()
+
+    @Provides
+    fun provideAssetLiabilityDao(db: AppDatabase): AssetLiabilityDao = db.assetLiabilityDao()
 }

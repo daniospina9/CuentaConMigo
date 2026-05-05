@@ -23,6 +23,7 @@ import com.example.cuentaconmigo.domain.model.InvestmentSubtype
 fun InvestmentDetailScreen(
     onNavigateBack: () -> Unit,
     onNavigateToSubAccount: (subAccountId: Long) -> Unit,
+    onNavigateToAssetSubAccount: (subAccountId: Long) -> Unit = {},
     viewModel: InvestmentDetailViewModel = hiltViewModel()
 ) {
     val parentAccount by viewModel.parentAccount.collectAsState()
@@ -67,7 +68,13 @@ fun InvestmentDetailScreen(
                 items(subAccounts, key = { it.account.id }) { summary ->
                     SubAccountCard(
                         summary = summary,
-                        onClick = { onNavigateToSubAccount(summary.account.id) },
+                        onClick = {
+                            if (summary.account.investmentSubtype == InvestmentSubtype.ASSET) {
+                                onNavigateToAssetSubAccount(summary.account.id)
+                            } else {
+                                onNavigateToSubAccount(summary.account.id)
+                            }
+                        },
                         onEdit = { accountToEdit = summary.account },
                         onDelete = { accountToDelete = summary.account }
                     )
