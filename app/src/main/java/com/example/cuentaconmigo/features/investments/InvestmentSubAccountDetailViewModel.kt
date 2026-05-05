@@ -40,9 +40,14 @@ class InvestmentSubAccountDetailViewModel @Inject constructor(
 
     val balance: StateFlow<Long> = _account
         .flatMapLatest { acct ->
-            if (acct != null && acct.investmentSubtype != InvestmentSubtype.EXPENSE)
-                investmentFluctuationRepository.getBalance(userId, acct.id)
-            else flowOf(0L)
+            when (acct?.investmentSubtype) {
+                InvestmentSubtype.LIQUID -> combine(
+                    investmentFluctuationRepository.getBalance(userId, acct.id),
+                    transactionRepository.getTotalExpensesForAccountFlow(acct.id)
+                ) { fluctuations, expenses -> fluctuations + expenses }
+                InvestmentSubtype.ASSET -> investmentFluctuationRepository.getBalance(userId, acct.id)
+                else -> flowOf(0L)
+            }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0L)
 

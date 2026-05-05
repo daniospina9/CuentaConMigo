@@ -34,10 +34,13 @@ class InvestmentDetailViewModel @Inject constructor(
                 if (subs.isEmpty()) flowOf(emptyList())
                 else combine(
                     subs.map { sub ->
-                        val valueFlow = if (sub.investmentSubtype == InvestmentSubtype.EXPENSE) {
-                            flow { emit(transactionRepository.getTotalInvestedInAccount(sub.id)) }
-                        } else {
-                            investmentFluctuationRepository.getBalance(userId, sub.id)
+                        val valueFlow = when (sub.investmentSubtype) {
+                            InvestmentSubtype.EXPENSE -> flow { emit(transactionRepository.getTotalInvestedInAccount(sub.id)) }
+                            InvestmentSubtype.LIQUID -> combine(
+                                investmentFluctuationRepository.getBalance(userId, sub.id),
+                                transactionRepository.getTotalExpensesForAccountFlow(sub.id)
+                            ) { fluctuations, expenses -> fluctuations + expenses }
+                            else -> investmentFluctuationRepository.getBalance(userId, sub.id)
                         }
                         valueFlow.map { value -> InvestmentAccountSummary(sub, value) }
                     }
