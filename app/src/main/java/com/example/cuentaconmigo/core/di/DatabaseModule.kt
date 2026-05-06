@@ -8,6 +8,7 @@ import com.example.cuentaconmigo.core.db.dao.AssetOperationDao
 import com.example.cuentaconmigo.core.db.dao.DepositAccountDao
 import com.example.cuentaconmigo.core.db.dao.DestinationAccountDao
 import com.example.cuentaconmigo.core.db.dao.InvestmentFluctuationDao
+import com.example.cuentaconmigo.core.db.dao.SavingsMovementDao
 import com.example.cuentaconmigo.core.db.dao.TransactionDao
 import com.example.cuentaconmigo.core.db.dao.UserDao
 import dagger.Module
@@ -30,7 +31,9 @@ object DatabaseModule {
                 AppDatabase.MIGRATION_3_4,
                 AppDatabase.MIGRATION_4_5,
                 AppDatabase.MIGRATION_5_6,
-                AppDatabase.MIGRATION_6_7
+                AppDatabase.MIGRATION_6_7,
+                AppDatabase.MIGRATION_7_8,
+                AppDatabase.MIGRATION_8_9
             )
             .fallbackToDestructiveMigration()
             .build()
@@ -55,4 +58,7 @@ object DatabaseModule {
 
     @Provides
     fun provideAssetLiabilityDao(db: AppDatabase): AssetLiabilityDao = db.assetLiabilityDao()
+
+    @Provides
+    fun provideSavingsMovementDao(db: AppDatabase): SavingsMovementDao = db.savingsMovementDao()
 }

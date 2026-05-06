@@ -42,8 +42,12 @@ data class TransactionFormState(
     val destinationIsInvestment: Boolean
         get() = selectedDestinationAccount?.type == AccountType.INVESTMENT
 
+    val destinationNeedsSubAccount: Boolean
+        get() = selectedDestinationAccount?.type == AccountType.INVESTMENT ||
+                selectedDestinationAccount?.type == AccountType.SAVINGS
+
     val effectiveDestinationId: Long?
-        get() = if (destinationIsInvestment) selectedSubAccount?.id
+        get() = if (destinationNeedsSubAccount) selectedSubAccount?.id
                 else selectedDestinationAccount?.id
 }
 
@@ -133,7 +137,7 @@ class TransactionFormViewModel @Inject constructor(
                 subAccountError = false
             )
         }
-        if (account.type == AccountType.INVESTMENT) loadSubAccounts(account.id)
+        if (account.type == AccountType.INVESTMENT || account.type == AccountType.SAVINGS) loadSubAccounts(account.id)
     }
 
     fun setSubAccount(account: DestinationAccount) =
@@ -149,7 +153,7 @@ class TransactionFormViewModel @Inject constructor(
         val hasAmountError = amount <= 0L
         val hasDepositError = s.selectedDepositAccount == null
         val hasDestinationError = s.type == TransactionType.EXPENSE && s.selectedDestinationAccount == null
-        val hasSubAccountError = s.type == TransactionType.EXPENSE && s.destinationIsInvestment && s.selectedSubAccount == null
+        val hasSubAccountError = s.type == TransactionType.EXPENSE && s.destinationNeedsSubAccount && s.selectedSubAccount == null
 
         if (hasAmountError || hasDepositError || hasDestinationError || hasSubAccountError) {
             _state.update {

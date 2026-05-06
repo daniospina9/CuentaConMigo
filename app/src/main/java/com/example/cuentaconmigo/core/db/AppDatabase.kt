@@ -11,6 +11,7 @@ import com.example.cuentaconmigo.core.db.dao.AssetOperationDao
 import com.example.cuentaconmigo.core.db.dao.DepositAccountDao
 import com.example.cuentaconmigo.core.db.dao.DestinationAccountDao
 import com.example.cuentaconmigo.core.db.dao.InvestmentFluctuationDao
+import com.example.cuentaconmigo.core.db.dao.SavingsMovementDao
 import com.example.cuentaconmigo.core.db.dao.TransactionDao
 import com.example.cuentaconmigo.core.db.dao.UserDao
 import com.example.cuentaconmigo.core.db.entities.AssetLiabilityEntity
@@ -18,6 +19,7 @@ import com.example.cuentaconmigo.core.db.entities.AssetOperationEntity
 import com.example.cuentaconmigo.core.db.entities.DepositAccountEntity
 import com.example.cuentaconmigo.core.db.entities.DestinationAccountEntity
 import com.example.cuentaconmigo.core.db.entities.InvestmentFluctuationEntity
+import com.example.cuentaconmigo.core.db.entities.SavingsMovementEntity
 import com.example.cuentaconmigo.core.db.entities.TransactionEntity
 import com.example.cuentaconmigo.core.db.entities.UserEntity
 
@@ -29,9 +31,10 @@ import com.example.cuentaconmigo.core.db.entities.UserEntity
         TransactionEntity::class,
         InvestmentFluctuationEntity::class,
         AssetOperationEntity::class,
-        AssetLiabilityEntity::class
+        AssetLiabilityEntity::class,
+        SavingsMovementEntity::class
     ],
-    version = 7,
+    version = 9,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -43,6 +46,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun investmentFluctuationDao(): InvestmentFluctuationDao
     abstract fun assetOperationDao(): AssetOperationDao
     abstract fun assetLiabilityDao(): AssetLiabilityDao
+    abstract fun savingsMovementDao(): SavingsMovementDao
 
     companion object {
         val MIGRATION_2_3 = object : Migration(2, 3) {
@@ -73,6 +77,49 @@ abstract class AppDatabase : RoomDatabase() {
                 database.execSQL(
                     "ALTER TABLE investment_fluctuations ADD COLUMN withdrawalGroupId TEXT"
                 )
+            }
+        }
+
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS savings_movements (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        userId INTEGER NOT NULL,
+                        subAccountId INTEGER NOT NULL,
+                        amount INTEGER NOT NULL,
+                        date INTEGER NOT NULL,
+                        description TEXT,
+                        groupId TEXT,
+                        FOREIGN KEY(userId) REFERENCES users(id) ON DELETE CASCADE,
+                        FOREIGN KEY(subAccountId) REFERENCES destination_accounts(id) ON DELETE RESTRICT
+                    )
+                """.trimIndent())
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_savings_movements_userId ON savings_movements(userId)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_savings_movements_subAccountId ON savings_movements(subAccountId)")
+            }
+        }
+
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("""
+                    CREATE TABLE savings_movements_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        userId INTEGER NOT NULL,
+                        subAccountId INTEGER NOT NULL,
+                        amount INTEGER NOT NULL,
+                        date INTEGER NOT NULL,
+                        description TEXT,
+                        groupId TEXT,
+                        FOREIGN KEY(userId) REFERENCES users(id) ON DELETE CASCADE,
+                        FOREIGN KEY(subAccountId) REFERENCES destination_accounts(id) ON DELETE RESTRICT
+                    )
+                """.trimIndent())
+                database.execSQL("INSERT INTO savings_movements_new SELECT * FROM savings_movements")
+                database.execSQL("DROP TABLE savings_movements")
+                database.execSQL("ALTER TABLE savings_movements_new RENAME TO savings_movements")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_savings_movements_userId ON savings_movements(userId)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_savings_movements_subAccountId ON savings_movements(subAccountId)")
             }
         }
 
