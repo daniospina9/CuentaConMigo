@@ -135,8 +135,14 @@ interface TransactionDao {
     @Query("SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE destinationAccountId = :accountId AND type = 'EXPENSE'")
     suspend fun getTotalInvestedInAccount(accountId: Long): Long
 
+    @Query("SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE destinationAccountId = :accountId AND type = 'EXPENSE'")
+    fun getTotalExpensesForAccountFlow(accountId: Long): Flow<Long>
+
     @Query("SELECT * FROM transactions WHERE destinationAccountId = :destinationAccountId ORDER BY date DESC")
     fun getByDestinationAccountAll(destinationAccountId: Long): Flow<List<TransactionEntity>>
+
+    @Query("SELECT * FROM transactions WHERE depositAccountId = :depositAccountId ORDER BY date DESC")
+    fun getAllByDepositAccount(depositAccountId: Long): Flow<List<TransactionEntity>>
 
     @Query("""
         SELECT t.* FROM transactions t

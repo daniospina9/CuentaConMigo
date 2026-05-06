@@ -8,4 +8,5 @@ interface InvestmentFluctuationRepository {
     suspend fun insert(fluctuation: InvestmentFluctuation): Long
     suspend fun delete(fluctuation: InvestmentFluctuation)
     fun getBalance(userId: Long, accountId: Long): Flow<Long>
+    suspend fun deleteByWithdrawalGroupId(withdrawalGroupId: String)
 }

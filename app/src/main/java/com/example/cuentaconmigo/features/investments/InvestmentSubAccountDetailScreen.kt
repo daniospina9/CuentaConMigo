@@ -13,13 +13,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.cuentaconmigo.core.util.filterAmountInput
 import com.example.cuentaconmigo.core.util.parseToCentavos
 import com.example.cuentaconmigo.core.util.toCopString
 import com.example.cuentaconmigo.core.util.toSignedCopString
+import com.example.cuentaconmigo.domain.model.DepositAccount
 import com.example.cuentaconmigo.domain.model.InvestmentFluctuation
 import com.example.cuentaconmigo.domain.model.InvestmentSubtype
 import com.example.cuentaconmigo.domain.model.Transaction
@@ -136,10 +139,22 @@ private fun SubAccountAssetContent(viewModel: InvestmentSubAccountDetailViewMode
 private fun SubAccountLiquidContent(viewModel: InvestmentSubAccountDetailViewModel) {
     val balance by viewModel.balance.collectAsState()
     val fluctuations by viewModel.fluctuations.collectAsState()
+    val depositAccounts by viewModel.depositAccounts.collectAsState()
     var toDelete by remember { mutableStateOf<InvestmentFluctuation?>(null) }
+    var showWithdrawDialog by remember { mutableStateOf(false) }
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 88.dp)) {
         item { SubBalanceCard("Saldo disponible", balance) }
+        item {
+            OutlinedButton(
+                onClick = { showWithdrawDialog = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+            ) {
+                Text("Retirar a cuenta de depósito")
+            }
+        }
         item { SubSectionHeader("Movimientos") }
         if (fluctuations.isEmpty()) {
             item { SubEmptyState("Sin movimientos. Toca + para añadir uno.") }
@@ -153,6 +168,17 @@ private fun SubAccountLiquidContent(viewModel: InvestmentSubAccountDetailViewMod
 
     toDelete?.let { fl ->
         SubDeleteDialog(fl.amount, onConfirm = { viewModel.deleteFluctuation(fl); toDelete = null }, onDismiss = { toDelete = null })
+    }
+
+    if (showWithdrawDialog) {
+        WithdrawToDepositDialog(
+            depositAccounts = depositAccounts,
+            onConfirm = { depositAccountId, amount, description ->
+                viewModel.withdraw(depositAccountId, amount, description)
+                showWithdrawDialog = false
+            },
+            onDismiss = { showWithdrawDialog = false }
+        )
     }
 }
 
@@ -255,12 +281,76 @@ private fun SubDeleteDialog(amount: Long, onConfirm: () -> Unit, onDismiss: () -
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WithdrawToDepositDialog(
+    depositAccounts: List<DepositAccount>,
+    onConfirm: (depositAccountId: Long, amount: Long, description: String?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var selectedAccount by remember { mutableStateOf(depositAccounts.firstOrNull()) }
+    var amountTfv by remember { mutableStateOf(TextFieldValue("")) }
+    var description by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
+    val centavos = amountTfv.text.parseToCentavos()
+    val isValid = centavos != null && centavos > 0 && selectedAccount != null
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Retirar a cuenta de depósito") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+                    OutlinedTextField(
+                        value = selectedAccount?.name ?: "Selecciona una cuenta",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Cuenta de destino") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        depositAccounts.forEach { account ->
+                            DropdownMenuItem(
+                                text = { Text(account.name) },
+                                onClick = { selectedAccount = account; expanded = false }
+                            )
+                        }
+                    }
+                }
+                OutlinedTextField(
+                    value = amountTfv,
+                    onValueChange = { amountTfv = filterAmountInput(amountTfv, it) },
+                    label = { Text("Monto (COP)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Descripción (opcional)") },
+                    maxLines = 2,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(selectedAccount!!.id, centavos!!, description.ifBlank { null }) },
+                enabled = isValid
+            ) { Text("Retirar") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
+}
+
 @Composable
 private fun SubAccountFluctuationDialog(title: String, positiveLabel: String, negativeLabel: String, onConfirm: (Long, String?) -> Unit, onDismiss: () -> Unit) {
     var isPositive by remember { mutableStateOf(true) }
-    var amountText by remember { mutableStateOf("") }
+    var amountTfv by remember { mutableStateOf(TextFieldValue("")) }
     var description by remember { mutableStateOf("") }
-    val centavos = amountText.parseToCentavos()
+    val centavos = amountTfv.text.parseToCentavos()
     val isValid = centavos != null && centavos > 0
 
     AlertDialog(
@@ -273,8 +363,8 @@ private fun SubAccountFluctuationDialog(title: String, positiveLabel: String, ne
                     FilterChip(selected = !isPositive, onClick = { isPositive = false }, label = { Text(negativeLabel) })
                 }
                 OutlinedTextField(
-                    value = amountText,
-                    onValueChange = { amountText = filterAmountInput(amountText, it) },
+                    value = amountTfv,
+                    onValueChange = { amountTfv = filterAmountInput(amountTfv, it) },
                     label = { Text("Monto (COP)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,

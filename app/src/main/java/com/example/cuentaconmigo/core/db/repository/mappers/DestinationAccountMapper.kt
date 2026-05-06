@@ -42,7 +42,8 @@ fun DestinationAccountEntity.toDomain() = DestinationAccount(
     type = type.toAccountType(),
     isDefault = isDefault,
     investmentSubtype = investmentSubtype.toInvestmentSubtype(),
-    parentAccountId = parentAccountId
+    parentAccountId = parentAccountId,
+    assetInitialValue = assetInitialValue
 )
 
 fun DestinationAccount.toEntity() = DestinationAccountEntity(
@@ -52,5 +53,6 @@ fun DestinationAccount.toEntity() = DestinationAccountEntity(
     type = type.toDbString(),
     isDefault = isDefault,
     investmentSubtype = investmentSubtype.toSubtypeDbString(),
-    parentAccountId = parentAccountId
+    parentAccountId = parentAccountId,
+    assetInitialValue = assetInitialValue
 )

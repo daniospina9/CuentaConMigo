@@ -8,5 +8,6 @@ data class InvestmentFluctuation(
     val destinationAccountId: Long,
     val amount: Long,
     val date: LocalDate,
-    val description: String?
+    val description: String?,
+    val withdrawalGroupId: String? = null
 )

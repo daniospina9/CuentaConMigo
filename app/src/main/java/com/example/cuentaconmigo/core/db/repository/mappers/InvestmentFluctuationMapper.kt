@@ -11,7 +11,8 @@ fun InvestmentFluctuationEntity.toDomain() = InvestmentFluctuation(
     destinationAccountId = destinationAccountId,
     amount = amount,
     date = LocalDate.ofEpochDay(date),
-    description = description
+    description = description,
+    withdrawalGroupId = withdrawalGroupId
 )
 
 fun InvestmentFluctuation.toEntity() = InvestmentFluctuationEntity(
@@ -20,5 +21,6 @@ fun InvestmentFluctuation.toEntity() = InvestmentFluctuationEntity(
     destinationAccountId = destinationAccountId,
     amount = amount,
     date = date.toEpochDay(),
-    description = description
+    description = description,
+    withdrawalGroupId = withdrawalGroupId
 )

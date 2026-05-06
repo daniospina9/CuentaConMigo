@@ -6,7 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
-    tableName = "investment_fluctuations",
+    tableName = "asset_operations",
     foreignKeys = [
         ForeignKey(
             entity = UserEntity::class,
@@ -17,21 +17,21 @@ import androidx.room.PrimaryKey
         ForeignKey(
             entity = DestinationAccountEntity::class,
             parentColumns = ["id"],
-            childColumns = ["destinationAccountId"],
-            onDelete = ForeignKey.RESTRICT
+            childColumns = ["subAccountId"],
+            onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [
-        Index("userId"),
-        Index("destinationAccountId")
-    ]
+    indices = [Index("userId"), Index("subAccountId")]
 )
-data class InvestmentFluctuationEntity(
+data class AssetOperationEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val userId: Long,
-    val destinationAccountId: Long,
-    val amount: Long,           // puede ser negativo
-    val date: Long,             // LocalDate.toEpochDay()
+    val subAccountId: Long,
+    val type: String,
+    val date: Long,
+    val balanceEffect: Long,
+    val assetValueDelta: Long = 0L,
     val description: String? = null,
+    val liabilityId: Long? = null,
     val withdrawalGroupId: String? = null
 )

@@ -45,4 +45,6 @@ interface TransactionRepository {
     suspend fun getTotalInvestedInAccount(accountId: Long): Long
     fun getByDestinationAccountAll(destinationAccountId: Long): Flow<List<Transaction>>
     fun getByParentInvestmentAccount(parentAccountId: Long, startDay: Long, endDay: Long): Flow<List<Transaction>>
+    fun getTotalExpensesForAccountFlow(accountId: Long): Flow<Long>
+    fun getAllByDepositAccount(depositAccountId: Long): Flow<List<Transaction>>
 }

@@ -7,5 +7,6 @@ data class DestinationAccount(
     val type: AccountType,
     val isDefault: Boolean,
     val investmentSubtype: InvestmentSubtype? = null,
-    val parentAccountId: Long? = null
+    val parentAccountId: Long? = null,
+    val assetInitialValue: Long = 0
 )

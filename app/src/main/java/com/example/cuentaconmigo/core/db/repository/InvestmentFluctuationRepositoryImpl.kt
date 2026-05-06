@@ -26,4 +26,7 @@ class InvestmentFluctuationRepositoryImpl @Inject constructor(
 
     override fun getBalance(userId: Long, accountId: Long): Flow<Long> =
         dao.getBalance(userId, accountId)
+
+    override suspend fun deleteByWithdrawalGroupId(withdrawalGroupId: String) =
+        dao.deleteByWithdrawalGroupId(withdrawalGroupId)
 }
