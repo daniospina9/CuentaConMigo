@@ -54,7 +54,7 @@ interface TransactionDao {
               AND t.type = 'EXPENSE'
         WHERE da.userId = :userId
           AND (
-              (da.type IN ('expense', 'savings') AND da.parentAccountId IS NULL)
+              (da.type IN ('expense', 'savings', 'investment') AND da.parentAccountId IS NULL)
               OR (da.type IN ('investment', 'savings') AND da.parentAccountId IS NOT NULL)
           )
         GROUP BY COALESCE(da.parentAccountId, da.id), COALESCE(parent.name, da.name)
