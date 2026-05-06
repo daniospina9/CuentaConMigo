@@ -12,7 +12,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
@@ -61,23 +60,15 @@ fun InvestmentSubAccountDetailScreen(
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             when (account?.investmentSubtype) {
-                InvestmentSubtype.ASSET   -> SubAccountAssetContent(viewModel)
                 InvestmentSubtype.LIQUID  -> SubAccountLiquidContent(viewModel)
                 InvestmentSubtype.EXPENSE -> SubAccountExpenseContent(viewModel)
-                null -> {}
+                else -> {}
             }
         }
     }
 
     if (showAddDialog) {
         when (account?.investmentSubtype) {
-            InvestmentSubtype.ASSET -> SubAccountFluctuationDialog(
-                title = "Actualizar valor",
-                positiveLabel = "Aumento",
-                negativeLabel = "Reducción",
-                onConfirm = { amount, desc -> viewModel.addFluctuation(amount, desc); showAddDialog = false },
-                onDismiss = { showAddDialog = false }
-            )
             InvestmentSubtype.LIQUID -> SubAccountFluctuationDialog(
                 title = "Registrar movimiento",
                 positiveLabel = "Ingreso",
@@ -92,46 +83,6 @@ fun InvestmentSubAccountDetailScreen(
     errorMessage?.let { msg ->
         LaunchedEffect(msg) { viewModel.clearError() }
         Snackbar(modifier = Modifier.padding(16.dp)) { Text(msg) }
-    }
-}
-
-@Composable
-private fun SubAccountAssetContent(viewModel: InvestmentSubAccountDetailViewModel) {
-    val balance by viewModel.balance.collectAsState()
-    val totalInvested by viewModel.totalInvested.collectAsState()
-    val unrealizedGain by viewModel.unrealizedGain.collectAsState()
-    val fluctuations by viewModel.fluctuations.collectAsState()
-    var toDelete by remember { mutableStateOf<InvestmentFluctuation?>(null) }
-
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 88.dp)) {
-        item {
-            Card(Modifier.fillMaxWidth().padding(16.dp)) {
-                Column(Modifier.padding(16.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SubSummaryRow("Valor actual", balance.toCopString(), highlight = true)
-                    HorizontalDivider()
-                    SubSummaryRow("Total invertido", totalInvested.toCopString())
-                    SubSummaryRow(
-                        "Ganancia no realizada",
-                        unrealizedGain.toSignedCopString(),
-                        valueColor = if (unrealizedGain >= 0) MaterialTheme.colorScheme.primary
-                                     else MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-        }
-        item { SubSectionHeader("Historial de valorización") }
-        if (fluctuations.isEmpty()) {
-            item { SubEmptyState("Sin registros. Toca + para añadir el valor actual.") }
-        } else {
-            items(fluctuations, key = { it.id }) { fl ->
-                SubFluctuationRow(fl, "Aumento", "Reducción") { toDelete = fl }
-                HorizontalDivider()
-            }
-        }
-    }
-
-    toDelete?.let { fl ->
-        SubDeleteDialog(fl.amount, onConfirm = { viewModel.deleteFluctuation(fl); toDelete = null }, onDismiss = { toDelete = null })
     }
 }
 
@@ -214,15 +165,6 @@ private fun SubBalanceCard(label: String, value: Long) {
             Spacer(Modifier.height(4.dp))
             Text(value.toCopString(), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
         }
-    }
-}
-
-@Composable
-private fun SubSummaryRow(label: String, value: String, highlight: Boolean = false, valueColor: Color = Color.Unspecified) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        val style = if (highlight) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium
-        Text(label, style = style)
-        Text(value, style = style, color = if (highlight) MaterialTheme.colorScheme.primary else valueColor)
     }
 }
 
