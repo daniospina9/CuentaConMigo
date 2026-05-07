@@ -13,6 +13,8 @@ import com.example.cuentaconmigo.features.home.DepositAccountTransactionsScreen
 import com.example.cuentaconmigo.features.investments.AssetSubAccountDetailScreen
 import com.example.cuentaconmigo.features.investments.InvestmentDetailScreen
 import com.example.cuentaconmigo.features.investments.InvestmentSubAccountDetailScreen
+import com.example.cuentaconmigo.features.savings.SavingsDetailScreen
+import com.example.cuentaconmigo.features.savings.SavingsSubAccountDetailScreen
 import com.example.cuentaconmigo.features.reports.AccountTransactionsScreen
 import com.example.cuentaconmigo.features.reports.FinancialReportScreen
 import com.example.cuentaconmigo.features.transactions.form.TransactionFormScreen
@@ -34,6 +36,8 @@ object Routes {
     const val INVESTMENT_DETAIL = "investment_detail/{userId}/{accountId}"
     const val INVESTMENT_SUB_ACCOUNT = "investment_sub_account/{userId}/{subAccountId}"
     const val ASSET_SUB_ACCOUNT = "asset_sub_account/{userId}/{subAccountId}"
+    const val SAVINGS_DETAIL = "savings_detail/{userId}/{accountId}"
+    const val SAVINGS_SUB_ACCOUNT = "savings_sub_account/{userId}/{subAccountId}"
     const val DEPOSIT_ACCOUNT_TRANSACTIONS =
         "deposit_account_transactions/{userId}/{depositAccountId}?accountName={accountName}"
 
@@ -51,6 +55,8 @@ object Routes {
     fun investmentDetail(userId: Long, accountId: Long) = "investment_detail/$userId/$accountId"
     fun investmentSubAccount(userId: Long, subAccountId: Long) = "investment_sub_account/$userId/$subAccountId"
     fun assetSubAccount(userId: Long, subAccountId: Long) = "asset_sub_account/$userId/$subAccountId"
+    fun savingsDetail(userId: Long, accountId: Long) = "savings_detail/$userId/$accountId"
+    fun savingsSubAccount(userId: Long, subAccountId: Long) = "savings_sub_account/$userId/$subAccountId"
     fun depositAccountTransactions(userId: Long, depositAccountId: Long, accountName: String) =
         "deposit_account_transactions/$userId/$depositAccountId?accountName=${Uri.encode(accountName)}"
 }
@@ -212,6 +218,32 @@ fun AppNavGraph() {
             )
         ) {
             AssetSubAccountDetailScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable(
+            route = Routes.SAVINGS_DETAIL,
+            arguments = listOf(
+                navArgument("userId") { type = NavType.LongType },
+                navArgument("accountId") { type = NavType.LongType }
+            )
+        ) { backStack ->
+            val userId = backStack.arguments!!.getLong("userId")
+            SavingsDetailScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToSubAccount = { subAccountId ->
+                    navController.navigate(Routes.savingsSubAccount(userId, subAccountId))
+                }
+            )
+        }
+
+        composable(
+            route = Routes.SAVINGS_SUB_ACCOUNT,
+            arguments = listOf(
+                navArgument("userId") { type = NavType.LongType },
+                navArgument("subAccountId") { type = NavType.LongType }
+            )
+        ) {
+            SavingsSubAccountDetailScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }

@@ -13,6 +13,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.cuentaconmigo.core.util.filterAmountInput
+import com.example.cuentaconmigo.domain.model.AccountType
 import com.example.cuentaconmigo.domain.model.DepositAccount
 import com.example.cuentaconmigo.domain.model.DestinationAccount
 import com.example.cuentaconmigo.domain.model.InvestmentSubtype
@@ -74,12 +75,13 @@ fun TransactionFormScreen(
                     onSelect = { viewModel.setDestinationAccount(it) }
                 )
 
-                // Sub-cuenta de inversión (aparece cuando el destino es de tipo inversión)
-                if (state.destinationIsInvestment) {
+                // Sub-cuenta (aparece cuando el destino es inversión o ahorro)
+                if (state.destinationNeedsSubAccount) {
                     SubAccountDropdown(
                         subAccounts = state.subAccounts,
                         selected = state.selectedSubAccount,
                         isError = state.subAccountError,
+                        isSavings = state.selectedDestinationAccount?.type == AccountType.SAVINGS,
                         onSelect = { viewModel.setSubAccount(it) }
                     )
                 }
@@ -198,15 +200,19 @@ private fun SubAccountDropdown(
     subAccounts: List<DestinationAccount>,
     selected: DestinationAccount?,
     isError: Boolean,
+    isSavings: Boolean,
     onSelect: (DestinationAccount) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val label = if (isSavings) "Subcuenta de ahorro *" else "Subcuenta de inversión *"
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(
-            value = selected?.let { "${it.name} (${it.investmentSubtype.label()})" } ?: "",
+            value = selected?.let {
+                if (isSavings) it.name else "${it.name} (${it.investmentSubtype.label()})"
+            } ?: "",
             onValueChange = {},
             readOnly = true,
-            label = { Text("Subcuenta de inversión *") },
+            label = { Text(label) },
             isError = isError,
             supportingText = {
                 if (isError) Text("Selecciona una subcuenta")
@@ -226,13 +232,17 @@ private fun SubAccountDropdown(
                 subAccounts.forEach { sub ->
                     DropdownMenuItem(
                         text = {
-                            Column {
+                            if (isSavings) {
                                 Text(sub.name)
-                                Text(
-                                    sub.investmentSubtype.label(),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                            } else {
+                                Column {
+                                    Text(sub.name)
+                                    Text(
+                                        sub.investmentSubtype.label(),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         },
                         onClick = { onSelect(sub); expanded = false }

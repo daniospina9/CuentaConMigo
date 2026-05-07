@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -14,9 +15,11 @@ import androidx.navigation.NavController
 import com.example.cuentaconmigo.features.home.HomeContent
 import com.example.cuentaconmigo.features.investments.InvestmentContent
 import com.example.cuentaconmigo.features.reports.ReportsContent
+import com.example.cuentaconmigo.features.savings.SavingsContent
 
 private enum class HomeTab(val label: String) {
     HOME("Inicio"),
+    SAVINGS("Ahorros"),
     INVESTMENTS("Inversiones"),
     REPORTS("Reportes")
 }
@@ -39,6 +42,7 @@ fun MainScreen(userId: Long, navController: NavController) {
                         icon = {
                             when (tab) {
                                 HomeTab.HOME -> Icon(Icons.Default.Home, contentDescription = tab.label)
+                                HomeTab.SAVINGS -> Icon(Icons.Default.Savings, contentDescription = tab.label)
                                 HomeTab.INVESTMENTS -> Icon(Icons.Default.TrendingUp, contentDescription = tab.label)
                                 HomeTab.REPORTS -> Icon(Icons.Default.BarChart, contentDescription = tab.label)
                             }
@@ -56,6 +60,11 @@ fun MainScreen(userId: Long, navController: NavController) {
         ) {
             when (selectedTab) {
                 HomeTab.HOME -> HomeContent(userId = userId, navController = navController)
+                HomeTab.SAVINGS -> SavingsContent(
+                    onNavigateToDetail = { accountId ->
+                        navController.navigate(Routes.savingsDetail(userId, accountId))
+                    }
+                )
                 HomeTab.INVESTMENTS -> InvestmentContent(
                     onNavigateToDetail = { accountId ->
                         navController.navigate(Routes.investmentDetail(userId, accountId))

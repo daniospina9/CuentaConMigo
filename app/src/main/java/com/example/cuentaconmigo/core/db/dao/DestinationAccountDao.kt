@@ -35,6 +35,9 @@ interface DestinationAccountDao {
     @Query("SELECT * FROM destination_accounts WHERE userId = :userId AND type = 'investment' AND parentAccountId IS NULL ORDER BY name ASC")
     fun getInvestmentAccounts(userId: Long): Flow<List<DestinationAccountEntity>>
 
+    @Query("SELECT * FROM destination_accounts WHERE userId = :userId AND type = 'savings' AND parentAccountId IS NULL ORDER BY name ASC")
+    fun getSavingsAccounts(userId: Long): Flow<List<DestinationAccountEntity>>
+
     @Query("SELECT * FROM destination_accounts WHERE parentAccountId = :parentAccountId ORDER BY name ASC")
     fun getSubAccounts(parentAccountId: Long): Flow<List<DestinationAccountEntity>>
 }

@@ -5,6 +5,7 @@ import com.example.cuentaconmigo.core.db.repository.AssetOperationRepositoryImpl
 import com.example.cuentaconmigo.core.db.repository.DepositAccountRepositoryImpl
 import com.example.cuentaconmigo.core.db.repository.DestinationAccountRepositoryImpl
 import com.example.cuentaconmigo.core.db.repository.InvestmentFluctuationRepositoryImpl
+import com.example.cuentaconmigo.core.db.repository.SavingsMovementRepositoryImpl
 import com.example.cuentaconmigo.core.db.repository.TransactionRepositoryImpl
 import com.example.cuentaconmigo.core.db.repository.UserRepositoryImpl
 import com.example.cuentaconmigo.domain.repository.AssetLiabilityRepository
@@ -12,6 +13,7 @@ import com.example.cuentaconmigo.domain.repository.AssetOperationRepository
 import com.example.cuentaconmigo.domain.repository.DepositAccountRepository
 import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
 import com.example.cuentaconmigo.domain.repository.InvestmentFluctuationRepository
+import com.example.cuentaconmigo.domain.repository.SavingsMovementRepository
 import com.example.cuentaconmigo.domain.repository.TransactionRepository
 import com.example.cuentaconmigo.domain.repository.UserRepository
 import dagger.Binds
@@ -44,4 +46,7 @@ abstract class RepositoryModule {
 
     @Binds @Singleton
     abstract fun bindAssetLiabilityRepository(impl: AssetLiabilityRepositoryImpl): AssetLiabilityRepository
+
+    @Binds @Singleton
+    abstract fun bindSavingsMovementRepository(impl: SavingsMovementRepositoryImpl): SavingsMovementRepository
 }

@@ -27,7 +27,9 @@ class AccountTransactionsViewModel @Inject constructor(
 
     val transactions: StateFlow<List<Transaction>> = flow {
         val account = destinationAccountRepository.getById(destinationAccountId)
-        val txFlow = if (account?.type == AccountType.INVESTMENT && account.parentAccountId == null) {
+        val isParentAccount = account?.parentAccountId == null &&
+            (account?.type == AccountType.INVESTMENT || account?.type == AccountType.SAVINGS)
+        val txFlow = if (isParentAccount) {
             transactionRepository.getByParentInvestmentAccount(destinationAccountId, startDay, endDay)
         } else {
             transactionRepository.getByDestinationAccount(destinationAccountId, startDay, endDay)

@@ -7,6 +7,7 @@ import com.example.cuentaconmigo.domain.model.Transaction
 import com.example.cuentaconmigo.domain.repository.AssetOperationRepository
 import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
 import com.example.cuentaconmigo.domain.repository.InvestmentFluctuationRepository
+import com.example.cuentaconmigo.domain.repository.SavingsMovementRepository
 import com.example.cuentaconmigo.domain.repository.TransactionRepository
 import com.example.cuentaconmigo.domain.usecase.DeleteTransactionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +27,7 @@ class DepositAccountTransactionsViewModel @Inject constructor(
     private val destinationAccountRepository: DestinationAccountRepository,
     private val investmentFluctuationRepository: InvestmentFluctuationRepository,
     private val assetOperationRepository: AssetOperationRepository,
+    private val savingsMovementRepository: SavingsMovementRepository,
     private val deleteTransactionUseCase: DeleteTransactionUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -70,6 +72,7 @@ class DepositAccountTransactionsViewModel @Inject constructor(
                 transactionRepository.deleteTransfer(groupId)
                 investmentFluctuationRepository.deleteByWithdrawalGroupId(groupId)
                 assetOperationRepository.deleteByWithdrawalGroupId(groupId)
+                savingsMovementRepository.deleteByGroupId(groupId)
             } else {
                 deleteTransactionUseCase(item.transaction)
             }
