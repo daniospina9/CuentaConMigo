@@ -144,6 +144,15 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE depositAccountId = :depositAccountId ORDER BY date DESC")
     fun getAllByDepositAccount(depositAccountId: Long): Flow<List<TransactionEntity>>
 
+    @Query("SELECT COUNT(*) FROM transactions WHERE destinationAccountId = :accountId")
+    suspend fun countByDestinationAccount(accountId: Long): Int
+
+    @Query("DELETE FROM transactions WHERE destinationAccountId = :accountId")
+    suspend fun deleteAllByDestinationAccount(accountId: Long)
+
+    @Query("DELETE FROM transactions WHERE destinationAccountId IN (SELECT id FROM destination_accounts WHERE id = :accountId OR parentAccountId = :accountId)")
+    suspend fun deleteAllByAccountOrParentId(accountId: Long)
+
     @Query("""
         SELECT t.* FROM transactions t
         INNER JOIN destination_accounts da ON da.id = t.destinationAccountId

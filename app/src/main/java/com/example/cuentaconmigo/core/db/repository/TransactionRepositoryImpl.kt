@@ -125,4 +125,13 @@ class TransactionRepositoryImpl @Inject constructor(
 
     override fun getAllByDepositAccount(depositAccountId: Long): Flow<List<Transaction>> =
         dao.getAllByDepositAccount(depositAccountId).map { list -> list.map { it.toDomain() } }
+
+    override suspend fun hasTransactions(accountId: Long): Boolean =
+        dao.countByDestinationAccount(accountId) > 0
+
+    override suspend fun deleteAllByDestinationAccount(accountId: Long) =
+        dao.deleteAllByDestinationAccount(accountId)
+
+    override suspend fun deleteAllByAccountOrParentId(accountId: Long) =
+        dao.deleteAllByAccountOrParentId(accountId)
 }

@@ -46,4 +46,15 @@ class DestinationAccountRepositoryImpl @Inject constructor(
 
     override fun getSubAccounts(parentAccountId: Long): Flow<List<DestinationAccount>> =
         dao.getSubAccounts(parentAccountId).map { list -> list.map { it.toDomain() } }
+
+    override suspend fun hasSubAccounts(accountId: Long): Boolean =
+        dao.countSubAccounts(accountId) > 0
+
+    override suspend fun forceDelete(accountId: Long): Result<Unit> = runCatching {
+        dao.deleteById(accountId)
+    }
+
+    override suspend fun forceDeleteWithChildren(accountId: Long): Result<Unit> = runCatching {
+        dao.deleteByIdOrParentId(accountId)
+    }
 }

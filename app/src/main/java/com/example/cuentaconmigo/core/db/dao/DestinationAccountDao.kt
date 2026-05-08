@@ -40,4 +40,13 @@ interface DestinationAccountDao {
 
     @Query("SELECT * FROM destination_accounts WHERE parentAccountId = :parentAccountId ORDER BY name ASC")
     fun getSubAccounts(parentAccountId: Long): Flow<List<DestinationAccountEntity>>
+
+    @Query("SELECT COUNT(*) FROM destination_accounts WHERE parentAccountId = :parentAccountId")
+    suspend fun countSubAccounts(parentAccountId: Long): Int
+
+    @Query("DELETE FROM destination_accounts WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
+    @Query("DELETE FROM destination_accounts WHERE id = :accountId OR parentAccountId = :accountId")
+    suspend fun deleteByIdOrParentId(accountId: Long)
 }
