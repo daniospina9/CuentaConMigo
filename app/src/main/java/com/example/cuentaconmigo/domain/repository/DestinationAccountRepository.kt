@@ -14,4 +14,7 @@ interface DestinationAccountRepository {
     fun getInvestmentAccounts(userId: Long): Flow<List<DestinationAccount>>
     fun getSavingsAccounts(userId: Long): Flow<List<DestinationAccount>>
     fun getSubAccounts(parentAccountId: Long): Flow<List<DestinationAccount>>
+    suspend fun hasSubAccounts(accountId: Long): Boolean
+    suspend fun forceDelete(accountId: Long): Result<Unit>
+    suspend fun forceDeleteWithChildren(accountId: Long): Result<Unit>
 }

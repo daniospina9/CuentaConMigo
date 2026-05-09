@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -102,7 +103,7 @@ fun DestinationAccountListScreen(
         }
 
         errorMessage?.let { msg ->
-            LaunchedEffect(msg) { viewModel.clearError() }
+            LaunchedEffect(msg) { delay(3_000); viewModel.clearError() }
             Snackbar(modifier = Modifier.padding(16.dp)) { Text(msg) }
         }
     }

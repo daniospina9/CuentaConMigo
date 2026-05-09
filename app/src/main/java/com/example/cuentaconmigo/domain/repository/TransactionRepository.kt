@@ -47,4 +47,7 @@ interface TransactionRepository {
     fun getByParentInvestmentAccount(parentAccountId: Long, startDay: Long, endDay: Long): Flow<List<Transaction>>
     fun getTotalExpensesForAccountFlow(accountId: Long): Flow<Long>
     fun getAllByDepositAccount(depositAccountId: Long): Flow<List<Transaction>>
+    suspend fun hasTransactions(accountId: Long): Boolean
+    suspend fun deleteAllByDestinationAccount(accountId: Long)
+    suspend fun deleteAllByAccountOrParentId(accountId: Long)
 }
