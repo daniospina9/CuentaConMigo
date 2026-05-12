@@ -21,7 +21,6 @@ import com.example.cuentaconmigo.core.util.parseToCentavos
 import com.example.cuentaconmigo.core.util.toCopString
 import com.example.cuentaconmigo.core.util.toSignedCopString
 import com.example.cuentaconmigo.domain.model.DepositAccount
-import com.example.cuentaconmigo.domain.model.SavingsMovement
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,12 +30,13 @@ fun SavingsSubAccountDetailScreen(
     viewModel: SavingsSubAccountDetailViewModel = hiltViewModel()
 ) {
     val account by viewModel.account.collectAsState()
-    val movements by viewModel.movements.collectAsState()
+    val allEntries by viewModel.allEntries.collectAsState()
     val balance by viewModel.balance.collectAsState()
     val depositAccounts by viewModel.depositAccounts.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     var showWithdrawDialog by remember { mutableStateOf(false) }
-    var movementToDelete by remember { mutableStateOf<SavingsMovement?>(null) }
+    var showExpenseDialog by remember { mutableStateOf(false) }
+    var entryToDelete by remember { mutableStateOf<SavingsEntry?>(null) }
 
     Scaffold(
         topBar = {
@@ -72,6 +72,17 @@ fun SavingsSubAccountDetailScreen(
             }
 
             item {
+                OutlinedButton(
+                    onClick = { showExpenseDialog = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    Text("Registrar gasto")
+                }
+            }
+
+            item {
                 Text(
                     "Movimientos",
                     style = MaterialTheme.typography.labelLarge,
@@ -79,15 +90,23 @@ fun SavingsSubAccountDetailScreen(
                 )
             }
 
-            if (movements.isEmpty()) {
+            if (allEntries.isEmpty()) {
                 item {
                     Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        Text("Sin retiros registrados.", style = MaterialTheme.typography.bodyMedium)
+                        Text("Sin movimientos registrados.", style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             } else {
-                items(movements, key = { it.id }) { movement ->
-                    SavingsMovementRow(movement = movement, onDelete = { movementToDelete = movement })
+                items(
+                    allEntries,
+                    key = { entry ->
+                        when (entry) {
+                            is SavingsEntry.Movement -> "m_${entry.source.id}"
+                            is SavingsEntry.Deposit -> "d_${entry.source.id}"
+                        }
+                    }
+                ) { entry ->
+                    SavingsEntryRow(entry = entry, onDelete = { entryToDelete = entry })
                     HorizontalDivider()
                 }
             }
@@ -107,18 +126,34 @@ fun SavingsSubAccountDetailScreen(
         )
     }
 
-    movementToDelete?.let { mv ->
+    if (showExpenseDialog) {
+        SavingsExpenseDialog(
+            onConfirm = { amount, desc ->
+                viewModel.recordExpense(amount, desc)
+                showExpenseDialog = false
+            },
+            onDismiss = { showExpenseDialog = false }
+        )
+    }
+
+    entryToDelete?.let { entry ->
         AlertDialog(
-            onDismissRequest = { movementToDelete = null },
+            onDismissRequest = { entryToDelete = null },
             title = { Text("Eliminar movimiento") },
-            text = { Text("¿Eliminar este registro de ${mv.amount.toSignedCopString()}?") },
+            text = { Text("¿Eliminar este registro de ${entry.amount.toSignedCopString()}?") },
             confirmButton = {
-                TextButton(onClick = { viewModel.deleteMovement(mv); movementToDelete = null }) {
+                TextButton(onClick = {
+                    when (entry) {
+                        is SavingsEntry.Movement -> viewModel.deleteMovement(entry.source)
+                        is SavingsEntry.Deposit -> viewModel.deleteDeposit(entry.source)
+                    }
+                    entryToDelete = null
+                }) {
                     Text("Eliminar", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { movementToDelete = null }) { Text("Cancelar") }
+                TextButton(onClick = { entryToDelete = null }) { Text("Cancelar") }
             }
         )
     }
@@ -130,21 +165,27 @@ fun SavingsSubAccountDetailScreen(
 }
 
 @Composable
-private fun SavingsMovementRow(movement: SavingsMovement, onDelete: () -> Unit) {
+private fun SavingsEntryRow(entry: SavingsEntry, onDelete: () -> Unit) {
     val formatter = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
-    val isDeposit = movement.amount >= 0
+    val isPositive = entry.amount >= 0
+    val label = when (entry) {
+        is SavingsEntry.Deposit -> "Depósito"
+        is SavingsEntry.Movement -> when {
+            entry.source.groupId != null -> "Retiro"
+            else -> "Gasto"
+        }
+    }
 
     ListItem(
         headlineContent = {
             Text(
-                movement.amount.toSignedCopString(),
-                color = if (isDeposit) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                entry.amount.toSignedCopString(),
+                color = if (isPositive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
             )
         },
         supportingContent = {
-            val label = if (isDeposit) "Depósito" else "Retiro"
-            val desc = movement.description?.let { " · $it" } ?: ""
-            Text("$label · ${movement.date.format(formatter)}$desc", style = MaterialTheme.typography.bodySmall)
+            val desc = entry.description?.let { " · $it" } ?: ""
+            Text("$label · ${entry.date.format(formatter)}$desc", style = MaterialTheme.typography.bodySmall)
         },
         trailingContent = {
             IconButton(onClick = onDelete) {
@@ -226,6 +267,47 @@ private fun SavingsMovementDialog(
                 },
                 enabled = amount > 0 && selectedAccount?.id != null
             ) { Text(confirmLabel) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
+}
+
+@Composable
+private fun SavingsExpenseDialog(
+    onConfirm: (amount: Long, description: String?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var amountTfv by remember { mutableStateOf(TextFieldValue("")) }
+    var description by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Registrar gasto") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = amountTfv,
+                    onValueChange = { new -> amountTfv = filterAmountInput(amountTfv, new) },
+                    label = { Text("Monto") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Descripción (opcional)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            val amount = amountTfv.text.parseToCentavos() ?: 0L
+            TextButton(
+                onClick = { onConfirm(amount, description.ifBlank { null }) },
+                enabled = amount > 0
+            ) { Text("Registrar") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )

@@ -20,6 +20,24 @@ import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
 
+sealed class SavingsEntry {
+    abstract val date: java.time.LocalDate
+    abstract val amount: Long
+    abstract val description: String?
+
+    data class Movement(val source: SavingsMovement) : SavingsEntry() {
+        override val date = source.date
+        override val amount = source.amount
+        override val description = source.description
+    }
+
+    data class Deposit(val source: Transaction) : SavingsEntry() {
+        override val date = source.date
+        override val amount = source.amount
+        override val description = source.description
+    }
+}
+
 @HiltViewModel
 class SavingsSubAccountDetailViewModel @Inject constructor(
     private val savingsMovementRepository: SavingsMovementRepository,
@@ -35,9 +53,14 @@ class SavingsSubAccountDetailViewModel @Inject constructor(
     private val _account = MutableStateFlow<DestinationAccount?>(null)
     val account: StateFlow<DestinationAccount?> = _account.asStateFlow()
 
-    val movements: StateFlow<List<SavingsMovement>> =
-        savingsMovementRepository.getBySubAccount(subAccountId)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val allEntries: StateFlow<List<SavingsEntry>> = combine(
+        savingsMovementRepository.getBySubAccount(subAccountId),
+        transactionRepository.getByDestinationAccountAll(subAccountId)
+    ) { movements, deposits ->
+        val movEntries = movements.map { SavingsEntry.Movement(it) }
+        val depEntries = deposits.map { SavingsEntry.Deposit(it) }
+        (movEntries + depEntries).sortedByDescending { it.date }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val balance: StateFlow<Long> =
         combine(
@@ -82,12 +105,33 @@ class SavingsSubAccountDetailViewModel @Inject constructor(
         }
     }
 
+    fun recordExpense(amount: Long, description: String?) {
+        viewModelScope.launch {
+            runCatching {
+                savingsMovementRepository.insert(
+                    SavingsMovement(
+                        id = 0, userId = userId, subAccountId = subAccountId,
+                        amount = -amount, date = LocalDate.now(),
+                        description = description, groupId = null
+                    )
+                )
+            }.onFailure { _errorMessage.value = it.message }
+        }
+    }
+
     fun deleteMovement(movement: SavingsMovement) {
         viewModelScope.launch {
             runCatching {
                 movement.groupId?.let { transactionRepository.deleteTransfer(it) }
                 savingsMovementRepository.delete(movement)
             }.onFailure { _errorMessage.value = it.message }
+        }
+    }
+
+    fun deleteDeposit(transaction: Transaction) {
+        viewModelScope.launch {
+            runCatching { transactionRepository.delete(transaction) }
+                .onFailure { _errorMessage.value = it.message }
         }
     }
 
