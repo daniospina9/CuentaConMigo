@@ -86,19 +86,20 @@ class SavingsSubAccountDetailViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching {
                 val groupId = UUID.randomUUID().toString()
+                val desc = description?.ifBlank { null } ?: "Retiro de ${_account.value?.name ?: "Ahorro"}"
                 transactionRepository.insert(
                     Transaction(
                         id = 0, userId = userId, depositAccountId = depositAccountId,
                         destinationAccountId = null, type = TransactionType.INCOME,
                         amount = amount, date = LocalDate.now(),
-                        description = description, transferGroupId = groupId
+                        description = desc, transferGroupId = groupId
                     )
                 )
                 savingsMovementRepository.insert(
                     SavingsMovement(
                         id = 0, userId = userId, subAccountId = subAccountId,
                         amount = -amount, date = LocalDate.now(),
-                        description = description, groupId = groupId
+                        description = desc, groupId = groupId
                     )
                 )
             }.onFailure { _errorMessage.value = it.message }

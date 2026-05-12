@@ -95,7 +95,13 @@ interface TransactionDao {
         FROM transactions
         WHERE depositAccountId = :depositAccountId
           AND date < :beforeEpochDay
-          AND transferGroupId IS NULL
+          AND (
+              transferGroupId IS NULL
+              OR transferGroupId NOT IN (
+                  SELECT DISTINCT transferGroupId FROM transactions
+                  WHERE type = 'EXPENSE' AND transferGroupId IS NOT NULL
+              )
+          )
     """)
     suspend fun getOpeningBalance(depositAccountId: Long, beforeEpochDay: Long): Long
 
@@ -105,7 +111,13 @@ interface TransactionDao {
         WHERE depositAccountId = :depositAccountId
           AND date BETWEEN :startEpochDay AND :endEpochDay
           AND type = 'INCOME'
-          AND transferGroupId IS NULL
+          AND (
+              transferGroupId IS NULL
+              OR transferGroupId NOT IN (
+                  SELECT DISTINCT transferGroupId FROM transactions
+                  WHERE type = 'EXPENSE' AND transferGroupId IS NOT NULL
+              )
+          )
     """)
     suspend fun getPeriodIncome(depositAccountId: Long, startEpochDay: Long, endEpochDay: Long): Long
 
@@ -123,7 +135,13 @@ interface TransactionDao {
         SELECT * FROM transactions
         WHERE userId = :userId
           AND date BETWEEN :startEpochDay AND :endEpochDay
-          AND transferGroupId IS NULL
+          AND (
+              transferGroupId IS NULL
+              OR transferGroupId NOT IN (
+                  SELECT DISTINCT transferGroupId FROM transactions
+                  WHERE type = 'EXPENSE' AND transferGroupId IS NOT NULL
+              )
+          )
         ORDER BY date DESC
     """)
     suspend fun getNonTransferTransactions(
