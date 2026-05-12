@@ -5,7 +5,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -96,23 +95,7 @@ fun HomeContent(
             onClick = { navController.navigate(Routes.transactionForm(userId, "EXPENSE")) },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Gasto manual")
-        }
-
-        OutlinedButton(
-            onClick = { navController.navigate(Routes.transactionForm(userId, "INCOME")) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Ingreso manual")
-        }
-
-        OutlinedButton(
-            onClick = { navController.navigate(Routes.transfer(userId)) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.Default.SwapHoriz, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("Transferencia entre cuentas")
+            Text("Transacción manual")
         }
 
         HorizontalDivider()
