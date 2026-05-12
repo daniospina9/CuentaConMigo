@@ -538,9 +538,11 @@ private fun AssetIncomeDialog(
     var amountTfv by remember { mutableStateOf(TextFieldValue("")) }
     var affectsValue by remember { mutableStateOf(false) }
     var valueDeltaTfv by remember { mutableStateOf(TextFieldValue("")) }
+    var valueDeltaPositive by remember { mutableStateOf(true) }
     var description by remember { mutableStateOf("") }
     val centavos = amountTfv.text.parseToCentavos()
-    val valueDeltaCentavos = if (affectsValue) valueDeltaTfv.text.parseToCentavos() ?: 0L else 0L
+    val rawDelta = if (affectsValue) valueDeltaTfv.text.parseToCentavos() ?: 0L else 0L
+    val valueDeltaCentavos = if (valueDeltaPositive) rawDelta else -rawDelta
     val isValid = centavos != null && centavos > 0
 
     AlertDialog(
@@ -565,6 +567,18 @@ private fun AssetIncomeDialog(
                     Switch(checked = affectsValue, onCheckedChange = { affectsValue = it })
                 }
                 if (affectsValue) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = valueDeltaPositive,
+                            onClick = { valueDeltaPositive = true },
+                            label = { Text("Aumenta +") }
+                        )
+                        FilterChip(
+                            selected = !valueDeltaPositive,
+                            onClick = { valueDeltaPositive = false },
+                            label = { Text("Disminuye −") }
+                        )
+                    }
                     OutlinedTextField(
                         value = valueDeltaTfv,
                         onValueChange = { valueDeltaTfv = filterAmountInput(valueDeltaTfv, it) },
