@@ -115,6 +115,13 @@ fun HomeContent(
             Text("Cuentas de destino / categorías")
         }
 
+        OutlinedButton(
+            onClick = { navController.navigate(Routes.debtList(userId)) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Deudas")
+        }
+
         Spacer(Modifier.height(80.dp))
     }
 }

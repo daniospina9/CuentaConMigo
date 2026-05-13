@@ -5,6 +5,8 @@ import androidx.room.Room
 import com.example.cuentaconmigo.core.db.AppDatabase
 import com.example.cuentaconmigo.core.db.dao.AssetLiabilityDao
 import com.example.cuentaconmigo.core.db.dao.AssetOperationDao
+import com.example.cuentaconmigo.core.db.dao.CreditCardDao
+import com.example.cuentaconmigo.core.db.dao.CreditCardTransactionDao
 import com.example.cuentaconmigo.core.db.dao.DepositAccountDao
 import com.example.cuentaconmigo.core.db.dao.DestinationAccountDao
 import com.example.cuentaconmigo.core.db.dao.InvestmentFluctuationDao
@@ -33,9 +35,11 @@ object DatabaseModule {
                 AppDatabase.MIGRATION_5_6,
                 AppDatabase.MIGRATION_6_7,
                 AppDatabase.MIGRATION_7_8,
-                AppDatabase.MIGRATION_8_9
+                AppDatabase.MIGRATION_8_9,
+                AppDatabase.MIGRATION_9_10,
+                AppDatabase.MIGRATION_10_11,
+                AppDatabase.MIGRATION_11_12
             )
-            .fallbackToDestructiveMigration()
             .build()
 
     @Provides
@@ -61,4 +65,10 @@ object DatabaseModule {
 
     @Provides
     fun provideSavingsMovementDao(db: AppDatabase): SavingsMovementDao = db.savingsMovementDao()
+
+    @Provides
+    fun provideCreditCardDao(db: AppDatabase): CreditCardDao = db.creditCardDao()
+
+    @Provides
+    fun provideCreditCardTransactionDao(db: AppDatabase): CreditCardTransactionDao = db.creditCardTransactionDao()
 }
