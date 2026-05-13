@@ -1,5 +1,6 @@
 package com.example.cuentaconmigo.features.debts
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,10 +9,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -43,6 +46,8 @@ fun CreditCardDetailScreen(
     var showPurchaseDialog by remember { mutableStateOf(false) }
     var showPaymentDialog by remember { mutableStateOf(false) }
     var showChargeDialog by remember { mutableStateOf(false) }
+    var txToDelete by remember { mutableStateOf<CreditCardTransaction?>(null) }
+    var txToEdit by remember { mutableStateOf<CreditCardTransaction?>(null) }
     val tem = viewModel.tem
 
     val available = (card?.creditLimit ?: 0L) - currentDebt
@@ -202,7 +207,11 @@ fun CreditCardDetailScreen(
                 }
             } else {
                 items(transactions, key = { it.id }) { tx ->
-                    CreditCardTxRow(tx)
+                    CreditCardTxRow(
+                        tx = tx,
+                        onEdit = { txToEdit = tx },
+                        onDelete = { txToDelete = tx }
+                    )
                     HorizontalDivider()
                 }
             }
@@ -244,6 +253,31 @@ fun CreditCardDetailScreen(
         )
     }
 
+    txToDelete?.let { tx ->
+        AlertDialog(
+            onDismissRequest = { txToDelete = null },
+            title = { Text("Eliminar movimiento") },
+            text = { Text("¿Eliminar este registro? Esta acción no se puede deshacer.") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.deleteTransaction(tx); txToDelete = null }) {
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = { TextButton(onClick = { txToDelete = null }) { Text("Cancelar") } }
+        )
+    }
+
+    txToEdit?.let { tx ->
+        EditCreditCardTxDialog(
+            tx = tx,
+            destinationAccounts = destinationAccounts,
+            depositAccounts = depositAccounts,
+            tem = tem,
+            onConfirm = { updated -> viewModel.updateTransaction(updated); txToEdit = null },
+            onDismiss = { txToEdit = null }
+        )
+    }
+
     errorMessage?.let { msg ->
         LaunchedEffect(msg) { viewModel.clearError() }
         Snackbar(modifier = Modifier.padding(16.dp)) { Text(msg) }
@@ -251,7 +285,11 @@ fun CreditCardDetailScreen(
 }
 
 @Composable
-private fun CreditCardTxRow(tx: CreditCardTransaction) {
+private fun CreditCardTxRow(
+    tx: CreditCardTransaction,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
     val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
     val label = when (tx.type) {
         CreditCardTransactionType.PURCHASE -> if (tx.installments > 1) "Compra (${tx.installments} cuotas)" else "Compra"
@@ -274,6 +312,18 @@ private fun CreditCardTxRow(tx: CreditCardTransaction) {
                 "$label · ${dateFormatter.format(Date(tx.date))}$desc",
                 style = MaterialTheme.typography.bodySmall
             )
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onEdit),
+        trailingContent = {
+            IconButton(onClick = onDelete) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Eliminar",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
         }
     )
 }
@@ -569,6 +619,143 @@ private fun RegisterChargeDialog(
                 },
                 enabled = amount > 0 && description.isNotBlank()
             ) { Text("Registrar") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditCreditCardTxDialog(
+    tx: CreditCardTransaction,
+    destinationAccounts: List<DestinationAccount>,
+    depositAccounts: List<DepositAccount>,
+    tem: Double,
+    onConfirm: (CreditCardTransaction) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val initialAmountText = remember(tx.id) {
+        filterAmountInput("", (tx.amount / 100).toString())
+    }
+    var amountTfv by remember(tx.id) {
+        mutableStateOf(TextFieldValue(initialAmountText, TextRange(initialAmountText.length)))
+    }
+    var description by remember(tx.id) { mutableStateOf(tx.description ?: "") }
+    var cuotasStr by remember(tx.id) { mutableStateOf(tx.installments.toString()) }
+    var selectedDestAccount by remember(tx.id, destinationAccounts) {
+        mutableStateOf(destinationAccounts.firstOrNull { it.id == tx.destinationAccountId })
+    }
+    var destMenuExpanded by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Editar movimiento") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = amountTfv,
+                    onValueChange = { new -> amountTfv = filterAmountInput(amountTfv, new) },
+                    label = { Text("Monto") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                when (tx.type) {
+                    CreditCardTransactionType.PURCHASE -> {
+                        OutlinedTextField(
+                            value = description,
+                            onValueChange = { description = it },
+                            label = { Text("Descripción (opcional)") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = cuotasStr,
+                            onValueChange = { cuotasStr = it },
+                            label = { Text("Número de cuotas (1 = de contado)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        val cuotas = cuotasStr.toIntOrNull() ?: 1
+                        val amountCentavos = amountTfv.text.parseToCentavos() ?: 0L
+                        if (cuotas > 1 && amountCentavos > 0 && tem > 0) {
+                            val cuotaMensual = amountCentavos * (tem * Math.pow(1 + tem, cuotas.toDouble())) / (Math.pow(1 + tem, cuotas.toDouble()) - 1)
+                            Text(
+                                "Cuota mensual aprox: ${cuotaMensual.toLong().toCopString()}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        if (destinationAccounts.isNotEmpty()) {
+                            ExposedDropdownMenuBox(
+                                expanded = destMenuExpanded,
+                                onExpandedChange = { destMenuExpanded = it }
+                            ) {
+                                OutlinedTextField(
+                                    value = selectedDestAccount?.name ?: "Sin categoría",
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text("Cuenta destino (opcional)") },
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = destMenuExpanded) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .menuAnchor()
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = destMenuExpanded,
+                                    onDismissRequest = { destMenuExpanded = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("Ninguna") },
+                                        onClick = { selectedDestAccount = null; destMenuExpanded = false }
+                                    )
+                                    destinationAccounts.forEach { acc ->
+                                        DropdownMenuItem(
+                                            text = { Text(acc.name) },
+                                            onClick = { selectedDestAccount = acc; destMenuExpanded = false }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    CreditCardTransactionType.PAYMENT -> {
+                        Text(
+                            "El pago vinculado en la cuenta de depósito también se actualizará.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    CreditCardTransactionType.INTEREST,
+                    CreditCardTransactionType.FEE -> {
+                        OutlinedTextField(
+                            value = description,
+                            onValueChange = { description = it },
+                            label = { Text("Descripción") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            val newAmount = amountTfv.text.parseToCentavos() ?: 0L
+            TextButton(
+                onClick = {
+                    val newCuotas = cuotasStr.toIntOrNull()?.coerceAtLeast(1) ?: 1
+                    onConfirm(
+                        tx.copy(
+                            amount = newAmount,
+                            description = description.ifBlank { null },
+                            installments = newCuotas,
+                            destinationAccountId = selectedDestAccount?.id
+                        )
+                    )
+                },
+                enabled = newAmount > 0
+            ) { Text("Guardar") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )

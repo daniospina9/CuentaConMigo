@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.example.cuentaconmigo.core.db.entities.CreditCardTransactionEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -17,6 +18,9 @@ interface CreditCardTransactionDao {
     @Delete
     suspend fun delete(tx: CreditCardTransactionEntity)
 
+    @Update
+    suspend fun update(tx: CreditCardTransactionEntity)
+
     @Query("SELECT * FROM credit_card_transactions WHERE creditCardId = :cardId ORDER BY date DESC")
     fun getByCard(cardId: Long): Flow<List<CreditCardTransactionEntity>>
 
@@ -27,4 +31,7 @@ interface CreditCardTransactionDao {
         FROM credit_card_transactions WHERE creditCardId = :cardId
     """)
     fun getCurrentDebt(cardId: Long): Flow<Long>
+
+    @Query("SELECT * FROM credit_card_transactions WHERE linkedTransactionId = :linkedTransactionId LIMIT 1")
+    suspend fun getByLinkedTransactionId(linkedTransactionId: Long): CreditCardTransactionEntity?
 }

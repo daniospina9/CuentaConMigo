@@ -14,4 +14,6 @@ interface CreditCardRepository {
     suspend fun deleteCard(card: CreditCard)
     suspend fun insertTransaction(tx: CreditCardTransaction): Long
     suspend fun deleteTransaction(tx: CreditCardTransaction)
+    suspend fun updateTransaction(tx: CreditCardTransaction)
+    suspend fun getTransactionByLinkedId(linkedTransactionId: Long): CreditCardTransaction?
 }

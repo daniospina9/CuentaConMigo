@@ -44,4 +44,10 @@ class CreditCardRepositoryImpl @Inject constructor(
 
     override suspend fun deleteTransaction(tx: CreditCardTransaction) =
         txDao.delete(tx.toEntity())
+
+    override suspend fun updateTransaction(tx: CreditCardTransaction) =
+        txDao.update(tx.toEntity())
+
+    override suspend fun getTransactionByLinkedId(linkedTransactionId: Long): CreditCardTransaction? =
+        txDao.getByLinkedTransactionId(linkedTransactionId)?.toDomain()
 }

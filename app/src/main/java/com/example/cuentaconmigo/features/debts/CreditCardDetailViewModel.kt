@@ -11,9 +11,11 @@ import com.example.cuentaconmigo.domain.model.DestinationAccount
 import com.example.cuentaconmigo.domain.model.MinPaymentType
 import com.example.cuentaconmigo.domain.repository.DepositAccountRepository
 import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
+import com.example.cuentaconmigo.domain.usecase.credit_card.DeleteCreditCardTransactionUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.GetCreditCardDetailUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.RegisterPaymentUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.RegisterPurchaseUseCase
+import com.example.cuentaconmigo.domain.usecase.credit_card.UpdateCreditCardTransactionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -24,6 +26,8 @@ class CreditCardDetailViewModel @Inject constructor(
     private val getCreditCardDetailUseCase: GetCreditCardDetailUseCase,
     private val registerPurchaseUseCase: RegisterPurchaseUseCase,
     private val registerPaymentUseCase: RegisterPaymentUseCase,
+    private val deleteCreditCardTransactionUseCase: DeleteCreditCardTransactionUseCase,
+    private val updateCreditCardTransactionUseCase: UpdateCreditCardTransactionUseCase,
     private val depositAccountRepository: DepositAccountRepository,
     private val destinationAccountRepository: DestinationAccountRepository,
     savedStateHandle: SavedStateHandle
@@ -133,6 +137,20 @@ class CreditCardDetailViewModel @Inject constructor(
                     date = date
                 )
             }.onFailure { _errorMessage.value = it.message }
+        }
+    }
+
+    fun deleteTransaction(tx: CreditCardTransaction) {
+        viewModelScope.launch {
+            runCatching { deleteCreditCardTransactionUseCase(tx) }
+                .onFailure { _errorMessage.value = it.message }
+        }
+    }
+
+    fun updateTransaction(tx: CreditCardTransaction) {
+        viewModelScope.launch {
+            runCatching { updateCreditCardTransactionUseCase(tx) }
+                .onFailure { _errorMessage.value = it.message }
         }
     }
 
