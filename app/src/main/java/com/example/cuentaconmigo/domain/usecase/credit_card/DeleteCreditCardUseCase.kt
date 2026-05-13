@@ -7,7 +7,9 @@ import javax.inject.Inject
 class DeleteCreditCardUseCase @Inject constructor(
     private val repository: CreditCardRepository
 ) {
-    // Soft delete: sets isActive = false
-    suspend operator fun invoke(card: CreditCard) =
+    suspend operator fun invoke(card: CreditCard) {
+        if (repository.hasTransactions(card.id))
+            throw IllegalStateException("No se puede eliminar una tarjeta con movimientos registrados.")
         repository.deleteCard(card.copy(isActive = false))
+    }
 }

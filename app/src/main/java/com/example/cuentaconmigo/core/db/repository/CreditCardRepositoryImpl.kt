@@ -50,4 +50,7 @@ class CreditCardRepositoryImpl @Inject constructor(
 
     override suspend fun getTransactionByLinkedId(linkedTransactionId: Long): CreditCardTransaction? =
         txDao.getByLinkedTransactionId(linkedTransactionId)?.toDomain()
+
+    override suspend fun hasTransactions(cardId: Long): Boolean =
+        txDao.countByCard(cardId) > 0
 }

@@ -49,9 +49,17 @@ fun CreditCardDetailScreen(
     var txToDelete by remember { mutableStateOf<CreditCardTransaction?>(null) }
     var txToEdit by remember { mutableStateOf<CreditCardTransaction?>(null) }
     val tem = viewModel.tem
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val available = (card?.creditLimit ?: 0L) - currentDebt
     val minPayment = viewModel.minPaymentAmount
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -63,7 +71,8 @@ fun CreditCardDetailScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         LazyColumn(
             Modifier
@@ -278,10 +287,6 @@ fun CreditCardDetailScreen(
         )
     }
 
-    errorMessage?.let { msg ->
-        LaunchedEffect(msg) { viewModel.clearError() }
-        Snackbar(modifier = Modifier.padding(16.dp)) { Text(msg) }
-    }
 }
 
 @Composable

@@ -37,6 +37,14 @@ fun DebtListScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
     var cardToDelete by remember { mutableStateOf<CreditCard?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -53,7 +61,8 @@ fun DebtListScreen(
             FloatingActionButton(onClick = { showCreateDialog = true }) {
                 Icon(Icons.Default.Add, contentDescription = "Nueva tarjeta")
             }
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         LazyColumn(
             Modifier
@@ -121,10 +130,6 @@ fun DebtListScreen(
         )
     }
 
-    errorMessage?.let { msg ->
-        LaunchedEffect(msg) { viewModel.clearError() }
-        Snackbar(modifier = Modifier.padding(16.dp)) { Text(msg) }
-    }
 }
 
 @Composable

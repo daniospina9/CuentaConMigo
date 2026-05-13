@@ -26,7 +26,7 @@ interface CreditCardTransactionDao {
 
     @Query("""
         SELECT COALESCE(
-            SUM(CASE WHEN type = 'PURCHASE' THEN amount ELSE 0 END) -
+            SUM(CASE WHEN type IN ('PURCHASE', 'INTEREST', 'FEE') THEN amount ELSE 0 END) -
             SUM(CASE WHEN type = 'PAYMENT' THEN amount ELSE 0 END), 0)
         FROM credit_card_transactions WHERE creditCardId = :cardId
     """)
@@ -34,4 +34,7 @@ interface CreditCardTransactionDao {
 
     @Query("SELECT * FROM credit_card_transactions WHERE linkedTransactionId = :linkedTransactionId LIMIT 1")
     suspend fun getByLinkedTransactionId(linkedTransactionId: Long): CreditCardTransactionEntity?
+
+    @Query("SELECT COUNT(*) FROM credit_card_transactions WHERE creditCardId = :cardId")
+    suspend fun countByCard(cardId: Long): Int
 }
