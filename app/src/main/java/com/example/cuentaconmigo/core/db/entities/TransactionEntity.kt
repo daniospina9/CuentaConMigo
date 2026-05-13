@@ -18,7 +18,7 @@ import androidx.room.PrimaryKey
             entity = DepositAccountEntity::class,
             parentColumns = ["id"],
             childColumns = ["depositAccountId"],
-            onDelete = ForeignKey.RESTRICT
+            onDelete = ForeignKey.CASCADE
         ),
         ForeignKey(
             entity = DestinationAccountEntity::class,
@@ -36,7 +36,7 @@ import androidx.room.PrimaryKey
 data class TransactionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val userId: Long,
-    val depositAccountId: Long,
+    val depositAccountId: Long?,
     val destinationAccountId: Long? = null,
     val type: String,               // "INCOME" | "EXPENSE"
     val amount: Long,               // pesos COP, always positive

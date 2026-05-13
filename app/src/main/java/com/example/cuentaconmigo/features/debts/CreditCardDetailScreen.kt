@@ -22,6 +22,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.cuentaconmigo.core.util.filterAmountInput
 import com.example.cuentaconmigo.core.util.parseToCentavos
 import com.example.cuentaconmigo.core.util.toCopString
+import com.example.cuentaconmigo.domain.model.AccountType
 import com.example.cuentaconmigo.domain.model.CreditCardTransaction
 import com.example.cuentaconmigo.domain.model.CreditCardTransactionType
 import com.example.cuentaconmigo.domain.model.DepositAccount
@@ -41,6 +42,7 @@ fun CreditCardDetailScreen(
     val transactions by viewModel.transactions.collectAsState()
     val depositAccounts by viewModel.depositAccounts.collectAsState()
     val destinationAccounts by viewModel.destinationAccounts.collectAsState()
+    val purchaseSubAccounts by viewModel.purchaseSubAccounts.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
     var showPurchaseDialog by remember { mutableStateOf(false) }
@@ -230,12 +232,17 @@ fun CreditCardDetailScreen(
     if (showPurchaseDialog) {
         RegisterPurchaseDialog(
             destinationAccounts = destinationAccounts,
+            subAccounts = purchaseSubAccounts,
             tem = tem,
+            onParentSelected = { viewModel.setPurchaseParent(it) },
             onConfirm = { amount, description, destAccountId, date, installments ->
                 viewModel.registerPurchase(amount, description, destAccountId, date, installments)
                 showPurchaseDialog = false
             },
-            onDismiss = { showPurchaseDialog = false }
+            onDismiss = {
+                viewModel.setPurchaseParent(null)
+                showPurchaseDialog = false
+            }
         )
     }
 
@@ -337,15 +344,25 @@ private fun CreditCardTxRow(
 @Composable
 private fun RegisterPurchaseDialog(
     destinationAccounts: List<DestinationAccount>,
+    subAccounts: List<DestinationAccount>,
     tem: Double,
+    onParentSelected: (DestinationAccount?) -> Unit,
     onConfirm: (amount: Long, description: String?, destinationAccountId: Long?, date: Long, installments: Int) -> Unit,
     onDismiss: () -> Unit
 ) {
     var amountTfv by remember { mutableStateOf(TextFieldValue("")) }
     var description by remember { mutableStateOf("") }
-    var selectedAccount by remember(destinationAccounts) { mutableStateOf(destinationAccounts.firstOrNull()) }
+    var selectedAccount by remember { mutableStateOf<DestinationAccount?>(null) }
+    var selectedSubAccount by remember { mutableStateOf<DestinationAccount?>(null) }
     var menuExpanded by remember { mutableStateOf(false) }
+    var subMenuExpanded by remember { mutableStateOf(false) }
     var cuotasStr by remember { mutableStateOf("1") }
+
+    // Reset sub-account selection when sub-account list changes (new parent picked)
+    LaunchedEffect(subAccounts) { selectedSubAccount = null }
+
+    val isInvestment = selectedAccount?.type == AccountType.INVESTMENT
+    val effectiveDestId = if (isInvestment) selectedSubAccount?.id else selectedAccount?.id
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -384,16 +401,23 @@ private fun RegisterPurchaseDialog(
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
-                if (destinationAccounts.isNotEmpty()) {
+                if (destinationAccounts.isEmpty()) {
+                    Text(
+                        "Crea una cuenta destino primero",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                } else {
+                    // Parent / category selector
                     ExposedDropdownMenuBox(
                         expanded = menuExpanded,
                         onExpandedChange = { menuExpanded = it }
                     ) {
                         OutlinedTextField(
-                            value = selectedAccount?.name ?: "Sin categoría",
+                            value = selectedAccount?.name ?: "",
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Cuenta destino (opcional)") },
+                            label = { Text("Categoría (obligatorio)") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = menuExpanded) },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -403,15 +427,53 @@ private fun RegisterPurchaseDialog(
                             expanded = menuExpanded,
                             onDismissRequest = { menuExpanded = false }
                         ) {
-                            DropdownMenuItem(
-                                text = { Text("Ninguna") },
-                                onClick = { selectedAccount = null; menuExpanded = false }
-                            )
                             destinationAccounts.forEach { acc ->
                                 DropdownMenuItem(
                                     text = { Text(acc.name) },
-                                    onClick = { selectedAccount = acc; menuExpanded = false }
+                                    onClick = {
+                                        selectedAccount = acc
+                                        menuExpanded = false
+                                        onParentSelected(acc)
+                                    }
                                 )
+                            }
+                        }
+                    }
+
+                    // Sub-account selector (only for investment accounts)
+                    if (isInvestment) {
+                        if (subAccounts.isEmpty()) {
+                            Text(
+                                "Esta cuenta de inversión no tiene subcuentas.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        } else {
+                            ExposedDropdownMenuBox(
+                                expanded = subMenuExpanded,
+                                onExpandedChange = { subMenuExpanded = it }
+                            ) {
+                                OutlinedTextField(
+                                    value = selectedSubAccount?.name ?: "",
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text("Subcuenta de inversión (obligatorio)") },
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = subMenuExpanded) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .menuAnchor()
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = subMenuExpanded,
+                                    onDismissRequest = { subMenuExpanded = false }
+                                ) {
+                                    subAccounts.forEach { sub ->
+                                        DropdownMenuItem(
+                                            text = { Text(sub.name) },
+                                            onClick = { selectedSubAccount = sub; subMenuExpanded = false }
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -421,17 +483,19 @@ private fun RegisterPurchaseDialog(
         confirmButton = {
             val amount = amountTfv.text.parseToCentavos() ?: 0L
             val cuotas = cuotasStr.toIntOrNull()?.coerceAtLeast(1) ?: 1
+            val canConfirm = amount > 0 && selectedAccount != null &&
+                (!isInvestment || selectedSubAccount != null)
             TextButton(
                 onClick = {
                     onConfirm(
                         amount,
                         description.ifBlank { null },
-                        selectedAccount?.id,
+                        effectiveDestId,
                         System.currentTimeMillis(),
                         cuotas
                     )
                 },
-                enabled = amount > 0
+                enabled = canConfirm
             ) { Text("Registrar") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }

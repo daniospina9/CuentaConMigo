@@ -40,7 +40,7 @@ import com.example.cuentaconmigo.core.db.entities.UserEntity
         CreditCardEntity::class,
         CreditCardTransactionEntity::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -224,6 +224,33 @@ abstract class AppDatabase : RoomDatabase() {
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_credit_cards_userId ON credit_cards(userId)")
                 // Add installments column to credit_card_transactions
                 database.execSQL("ALTER TABLE credit_card_transactions ADD COLUMN installments INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+
+        val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS transactions_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        userId INTEGER NOT NULL,
+                        depositAccountId INTEGER,
+                        destinationAccountId INTEGER,
+                        type TEXT NOT NULL,
+                        amount INTEGER NOT NULL,
+                        date INTEGER NOT NULL,
+                        description TEXT,
+                        transferGroupId TEXT,
+                        FOREIGN KEY(userId) REFERENCES users(id) ON DELETE CASCADE,
+                        FOREIGN KEY(depositAccountId) REFERENCES deposit_accounts(id) ON DELETE CASCADE,
+                        FOREIGN KEY(destinationAccountId) REFERENCES destination_accounts(id) ON DELETE RESTRICT
+                    )
+                """.trimIndent())
+                database.execSQL("INSERT INTO transactions_new SELECT * FROM transactions")
+                database.execSQL("DROP TABLE transactions")
+                database.execSQL("ALTER TABLE transactions_new RENAME TO transactions")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_userId ON transactions(userId)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_depositAccountId ON transactions(depositAccountId)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_destinationAccountId ON transactions(destinationAccountId)")
             }
         }
 

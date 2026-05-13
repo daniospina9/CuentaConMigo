@@ -3,6 +3,7 @@ package com.example.cuentaconmigo.features.debts
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cuentaconmigo.domain.model.AccountType
 import com.example.cuentaconmigo.domain.model.CreditCard
 import com.example.cuentaconmigo.domain.model.CreditCardTransaction
 import com.example.cuentaconmigo.domain.model.CreditCardTransactionType
@@ -11,6 +12,7 @@ import com.example.cuentaconmigo.domain.model.DestinationAccount
 import com.example.cuentaconmigo.domain.model.MinPaymentType
 import com.example.cuentaconmigo.domain.repository.DepositAccountRepository
 import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
+import kotlinx.coroutines.Job
 import com.example.cuentaconmigo.domain.usecase.credit_card.DeleteCreditCardTransactionUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.GetCreditCardDetailUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.RegisterPaymentUseCase
@@ -54,7 +56,24 @@ class CreditCardDetailViewModel @Inject constructor(
 
     val destinationAccounts: StateFlow<List<DestinationAccount>> =
         destinationAccountRepository.getByUser(userId)
+            .map { list -> list.filter { it.type != AccountType.SAVINGS } }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private var subAccountJob: Job? = null
+    private val _purchaseSubAccounts = MutableStateFlow<List<DestinationAccount>>(emptyList())
+    val purchaseSubAccounts: StateFlow<List<DestinationAccount>> = _purchaseSubAccounts.asStateFlow()
+
+    fun setPurchaseParent(account: DestinationAccount?) {
+        subAccountJob?.cancel()
+        _purchaseSubAccounts.value = emptyList()
+        if (account?.type == AccountType.INVESTMENT) {
+            subAccountJob = viewModelScope.launch {
+                destinationAccountRepository.getSubAccounts(account.id).collect {
+                    _purchaseSubAccounts.value = it
+                }
+            }
+        }
+    }
 
     val availableCredit: Long
         get() = (card.value?.creditLimit ?: 0L) - currentDebt.value
