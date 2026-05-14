@@ -204,6 +204,13 @@ class AssetSubAccountDetailViewModel @Inject constructor(
         }
     }
 
+    fun deleteDeposit(transaction: Transaction) {
+        viewModelScope.launch {
+            runCatching { transactionRepository.delete(transaction) }
+                .onFailure { _errorMessage.value = it.message }
+        }
+    }
+
     fun deleteLiability(liability: AssetLiability) {
         viewModelScope.launch {
             runCatching { assetLiabilityRepository.delete(liability) }

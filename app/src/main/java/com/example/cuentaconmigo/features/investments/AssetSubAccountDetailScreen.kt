@@ -52,6 +52,7 @@ fun AssetSubAccountDetailScreen(
     var showWithdrawDialog by remember { mutableStateOf(false) }
     var liabilityToPay by remember { mutableStateOf<AssetLiability?>(null) }
     var operationToDelete by remember { mutableStateOf<AssetOperation?>(null) }
+    var depositToDelete by remember { mutableStateOf<com.example.cuentaconmigo.domain.model.Transaction?>(null) }
     var liabilityToDelete by remember { mutableStateOf<AssetLiability?>(null) }
 
     Scaffold(
@@ -220,7 +221,8 @@ fun AssetSubAccountDetailScreen(
                             onDelete = { operationToDelete = item.operation }
                         )
                         is AssetHistoryItem.DepositItem -> DepositHistoryRow(
-                            transaction = item.transaction
+                            transaction = item.transaction,
+                            onDelete = { depositToDelete = item.transaction }
                         )
                     }
                     HorizontalDivider()
@@ -300,6 +302,20 @@ fun AssetSubAccountDetailScreen(
                 operationToDelete = null
             },
             onDismiss = { operationToDelete = null }
+        )
+    }
+
+    depositToDelete?.let { tx ->
+        AlertDialog(
+            onDismissRequest = { depositToDelete = null },
+            title = { Text("Eliminar depósito") },
+            text = { Text("¿Eliminar este depósito de ${tx.amount.toCopString()}? Esta acción no se puede deshacer.") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.deleteDeposit(tx); depositToDelete = null }) {
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = { TextButton(onClick = { depositToDelete = null }) { Text("Cancelar") } }
         )
     }
 
@@ -409,7 +425,10 @@ private fun OperationHistoryRow(
 }
 
 @Composable
-private fun DepositHistoryRow(transaction: com.example.cuentaconmigo.domain.model.Transaction) {
+private fun DepositHistoryRow(
+    transaction: com.example.cuentaconmigo.domain.model.Transaction,
+    onDelete: () -> Unit
+) {
     val formatter = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
     ListItem(
         headlineContent = {
@@ -423,6 +442,11 @@ private fun DepositHistoryRow(transaction: com.example.cuentaconmigo.domain.mode
                 Text("Ingreso de depósito", style = MaterialTheme.typography.bodySmall)
                 transaction.description?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                 Text(transaction.date.format(formatter), style = MaterialTheme.typography.bodySmall)
+            }
+        },
+        trailingContent = {
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = "Eliminar")
             }
         }
     )
