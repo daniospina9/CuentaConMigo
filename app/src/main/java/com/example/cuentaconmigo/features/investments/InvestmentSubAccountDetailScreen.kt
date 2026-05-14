@@ -89,9 +89,10 @@ fun InvestmentSubAccountDetailScreen(
 @Composable
 private fun SubAccountLiquidContent(viewModel: InvestmentSubAccountDetailViewModel) {
     val balance by viewModel.balance.collectAsState()
-    val fluctuations by viewModel.fluctuations.collectAsState()
+    val allEntries by viewModel.allEntries.collectAsState()
     val depositAccounts by viewModel.depositAccounts.collectAsState()
-    var toDelete by remember { mutableStateOf<InvestmentFluctuation?>(null) }
+    var fluctuationToDelete by remember { mutableStateOf<InvestmentFluctuation?>(null) }
+    var depositToDelete by remember { mutableStateOf<Transaction?>(null) }
     var showWithdrawDialog by remember { mutableStateOf(false) }
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 88.dp)) {
@@ -107,18 +108,30 @@ private fun SubAccountLiquidContent(viewModel: InvestmentSubAccountDetailViewMod
             }
         }
         item { SubSectionHeader("Movimientos") }
-        if (fluctuations.isEmpty()) {
+        if (allEntries.isEmpty()) {
             item { SubEmptyState("Sin movimientos. Toca + para añadir uno.") }
         } else {
-            items(fluctuations, key = { it.id }) { fl ->
-                SubFluctuationRow(fl, "Ingreso", "Egreso") { toDelete = fl }
+            items(allEntries, key = { entry ->
+                when (entry) {
+                    is LiquidEntry.Fluctuation -> "f-${entry.source.id}"
+                    is LiquidEntry.Deposit     -> "d-${entry.source.id}"
+                }
+            }) { entry ->
+                when (entry) {
+                    is LiquidEntry.Fluctuation -> SubFluctuationRow(entry.source, "Ingreso", "Egreso") { fluctuationToDelete = entry.source }
+                    is LiquidEntry.Deposit     -> SubDepositRow(entry.source) { depositToDelete = entry.source }
+                }
                 HorizontalDivider()
             }
         }
     }
 
-    toDelete?.let { fl ->
-        SubDeleteDialog(fl.amount, onConfirm = { viewModel.deleteFluctuation(fl); toDelete = null }, onDismiss = { toDelete = null })
+    fluctuationToDelete?.let { fl ->
+        SubDeleteDialog(fl.amount, onConfirm = { viewModel.deleteFluctuation(fl); fluctuationToDelete = null }, onDismiss = { fluctuationToDelete = null })
+    }
+
+    depositToDelete?.let { tx ->
+        SubDeleteDialog(tx.amount, onConfirm = { viewModel.deleteDeposit(tx); depositToDelete = null }, onDismiss = { depositToDelete = null })
     }
 
     if (showWithdrawDialog) {
@@ -209,6 +222,23 @@ private fun SubExpenseRow(tx: Transaction) {
                 tx.description?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
             }
         }
+    )
+}
+
+@Composable
+private fun SubDepositRow(tx: Transaction, onDelete: () -> Unit) {
+    val formatter = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
+    ListItem(
+        headlineContent = {
+            Text(tx.amount.toCopString(), color = MaterialTheme.colorScheme.primary)
+        },
+        supportingContent = {
+            Column {
+                Text("Depósito · ${tx.date.format(formatter)}", style = MaterialTheme.typography.bodySmall)
+                tx.description?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            }
+        },
+        trailingContent = { IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = "Eliminar") } }
     )
 }
 

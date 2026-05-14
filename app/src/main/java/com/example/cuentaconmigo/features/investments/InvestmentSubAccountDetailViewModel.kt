@@ -19,6 +19,16 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
 
+sealed class LiquidEntry {
+    abstract val date: LocalDate
+    data class Fluctuation(val source: InvestmentFluctuation) : LiquidEntry() {
+        override val date get() = source.date
+    }
+    data class Deposit(val source: Transaction) : LiquidEntry() {
+        override val date get() = source.date
+    }
+}
+
 @HiltViewModel
 class InvestmentSubAccountDetailViewModel @Inject constructor(
     private val destinationAccountRepository: DestinationAccountRepository,
@@ -65,6 +75,21 @@ class InvestmentSubAccountDetailViewModel @Inject constructor(
     val unrealizedGain: StateFlow<Long> = combine(balance, totalInvested) { bal, inv -> bal - inv }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0L)
 
+    val allEntries: StateFlow<List<LiquidEntry>> = _account
+        .flatMapLatest { acct ->
+            if (acct?.investmentSubtype == InvestmentSubtype.LIQUID) {
+                combine(
+                    investmentFluctuationRepository.getByAccount(acct.id),
+                    transactionRepository.getByDestinationAccountAll(acct.id)
+                ) { fluctuations, deposits ->
+                    val flucItems = fluctuations.map { LiquidEntry.Fluctuation(it) }
+                    val depItems = deposits.map { LiquidEntry.Deposit(it) }
+                    (flucItems + depItems).sortedByDescending { it.date }
+                }
+            } else flowOf(emptyList())
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     val transactions: StateFlow<List<Transaction>> = _account
         .flatMapLatest { acct ->
             if (acct?.investmentSubtype == InvestmentSubtype.EXPENSE)
@@ -109,6 +134,13 @@ class InvestmentSubAccountDetailViewModel @Inject constructor(
                 investmentFluctuationRepository.delete(fluctuation)
                 fluctuation.withdrawalGroupId?.let { transactionRepository.deleteTransfer(it) }
             }.onFailure { _errorMessage.value = it.message }
+        }
+    }
+
+    fun deleteDeposit(transaction: Transaction) {
+        viewModelScope.launch {
+            runCatching { transactionRepository.delete(transaction) }
+                .onFailure { _errorMessage.value = it.message }
         }
     }
 
