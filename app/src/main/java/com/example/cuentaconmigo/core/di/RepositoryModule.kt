@@ -2,6 +2,7 @@ package com.example.cuentaconmigo.core.di
 
 import com.example.cuentaconmigo.core.db.repository.AssetLiabilityRepositoryImpl
 import com.example.cuentaconmigo.core.db.repository.AssetOperationRepositoryImpl
+import com.example.cuentaconmigo.core.db.repository.CreditCardRepositoryImpl
 import com.example.cuentaconmigo.core.db.repository.DepositAccountRepositoryImpl
 import com.example.cuentaconmigo.core.db.repository.DestinationAccountRepositoryImpl
 import com.example.cuentaconmigo.core.db.repository.InvestmentFluctuationRepositoryImpl
@@ -10,6 +11,7 @@ import com.example.cuentaconmigo.core.db.repository.TransactionRepositoryImpl
 import com.example.cuentaconmigo.core.db.repository.UserRepositoryImpl
 import com.example.cuentaconmigo.domain.repository.AssetLiabilityRepository
 import com.example.cuentaconmigo.domain.repository.AssetOperationRepository
+import com.example.cuentaconmigo.domain.repository.CreditCardRepository
 import com.example.cuentaconmigo.domain.repository.DepositAccountRepository
 import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
 import com.example.cuentaconmigo.domain.repository.InvestmentFluctuationRepository
@@ -49,4 +51,7 @@ abstract class RepositoryModule {
 
     @Binds @Singleton
     abstract fun bindSavingsMovementRepository(impl: SavingsMovementRepositoryImpl): SavingsMovementRepository
+
+    @Binds @Singleton
+    abstract fun bindCreditCardRepository(impl: CreditCardRepositoryImpl): CreditCardRepository
 }

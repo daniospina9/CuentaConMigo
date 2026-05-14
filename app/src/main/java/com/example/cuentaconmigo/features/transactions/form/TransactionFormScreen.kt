@@ -48,23 +48,42 @@ fun TransactionFormScreen(
             // Tipo
             Text("Tipo de transacción", style = MaterialTheme.typography.labelLarge)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TransactionType.entries.forEach { type ->
+                listOf(TransactionType.INCOME, TransactionType.EXPENSE, TransactionType.TRANSFER).forEach { type ->
                     FilterChip(
                         selected = state.type == type,
                         onClick = { viewModel.setType(type) },
-                        label = { Text(if (type == TransactionType.INCOME) "Ingreso" else "Gasto") }
+                        label = {
+                            Text(when (type) {
+                                TransactionType.INCOME   -> "Ingreso"
+                                TransactionType.EXPENSE  -> "Gasto"
+                                TransactionType.TRANSFER -> "Transferencia"
+                            })
+                        }
                     )
                 }
             }
 
-            // Cuenta de depósito
+            // Cuenta de depósito (origen para transferencia)
             AccountDropdown(
-                label = "Cuenta de depósito *",
+                label = if (state.type == TransactionType.TRANSFER) "Cuenta origen *" else "Cuenta de depósito *",
                 accounts = state.depositAccounts,
                 selected = state.selectedDepositAccount,
                 isError = state.depositError,
                 onSelect = { viewModel.setDepositAccount(it) }
             )
+
+            // Cuenta destino (solo para transferencia)
+            if (state.type == TransactionType.TRANSFER) {
+                AccountDropdown(
+                    label = "Cuenta destino *",
+                    accounts = state.depositAccounts,
+                    selected = state.toDepositAccount,
+                    isError = state.toDepositError || state.sameAccountError,
+                    errorText = if (state.sameAccountError) "Origen y destino deben ser diferentes"
+                                else "Selecciona la cuenta destino",
+                    onSelect = { viewModel.setToDepositAccount(it) }
+                )
+            }
 
             // Cuenta de destino (solo para gastos)
             if (state.type == TransactionType.EXPENSE) {
@@ -121,7 +140,12 @@ fun TransactionFormScreen(
             Button(
                 onClick = { viewModel.submit() },
                 modifier = Modifier.fillMaxWidth()
-            ) { Text("Guardar transacción") }
+            ) {
+                Text(when (state.type) {
+                    TransactionType.TRANSFER -> "Transferir"
+                    else -> "Guardar transacción"
+                })
+            }
         }
 
         state.errorMessage?.let { msg ->
@@ -138,7 +162,8 @@ private fun AccountDropdown(
     accounts: List<DepositAccount>,
     selected: DepositAccount?,
     isError: Boolean,
-    onSelect: (DepositAccount) -> Unit
+    onSelect: (DepositAccount) -> Unit,
+    errorText: String = "Selecciona una cuenta"
 ) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
@@ -148,7 +173,7 @@ private fun AccountDropdown(
             readOnly = true,
             label = { Text(label) },
             isError = isError,
-            supportingText = { if (isError) Text("Selecciona una cuenta") },
+            supportingText = { if (isError) Text(errorText) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier.menuAnchor().fillMaxWidth()
         )

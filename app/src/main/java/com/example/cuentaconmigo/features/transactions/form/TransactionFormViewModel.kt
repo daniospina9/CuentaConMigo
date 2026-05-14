@@ -14,6 +14,7 @@ import com.example.cuentaconmigo.domain.usecase.GetDepositAccountsUseCase
 import com.example.cuentaconmigo.domain.usecase.GetDestinationAccountsUseCase
 import com.example.cuentaconmigo.domain.usecase.GetTransactionByIdUseCase
 import com.example.cuentaconmigo.domain.usecase.InsertTransactionUseCase
+import com.example.cuentaconmigo.domain.usecase.InsertTransferUseCase
 import com.example.cuentaconmigo.domain.usecase.UpdateTransactionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -32,10 +33,13 @@ data class TransactionFormState(
     val depositAccounts: List<DepositAccount> = emptyList(),
     val destinationAccounts: List<DestinationAccount> = emptyList(),
     val subAccounts: List<DestinationAccount> = emptyList(),
+    val toDepositAccount: DepositAccount? = null,
     val amountError: Boolean = false,
     val depositError: Boolean = false,
     val destinationError: Boolean = false,
     val subAccountError: Boolean = false,
+    val toDepositError: Boolean = false,
+    val sameAccountError: Boolean = false,
     val isSaved: Boolean = false,
     val errorMessage: String? = null
 ) {
@@ -55,6 +59,7 @@ data class TransactionFormState(
 class TransactionFormViewModel @Inject constructor(
     private val insertTransactionUseCase: InsertTransactionUseCase,
     private val updateTransactionUseCase: UpdateTransactionUseCase,
+    private val insertTransferUseCase: InsertTransferUseCase,
     private val getTransactionByIdUseCase: GetTransactionByIdUseCase,
     private val getDepositAccountsUseCase: GetDepositAccountsUseCase,
     private val getDestinationAccountsUseCase: GetDestinationAccountsUseCase,
@@ -122,7 +127,14 @@ class TransactionFormViewModel @Inject constructor(
     }
 
     fun setType(type: TransactionType) =
-        _state.update { it.copy(type = type, selectedDestinationAccount = null, selectedSubAccount = null, subAccounts = emptyList()) }
+        _state.update { it.copy(
+            type = type,
+            selectedDestinationAccount = null, selectedSubAccount = null, subAccounts = emptyList(),
+            toDepositAccount = null, toDepositError = false, sameAccountError = false
+        ) }
+
+    fun setToDepositAccount(account: DepositAccount) =
+        _state.update { it.copy(toDepositAccount = account, toDepositError = false, sameAccountError = false) }
 
     fun setDepositAccount(account: DepositAccount) =
         _state.update { it.copy(selectedDepositAccount = account, depositError = false) }
@@ -152,6 +164,37 @@ class TransactionFormViewModel @Inject constructor(
         val amount = s.amountText.parseToCentavos() ?: 0L
         val hasAmountError = amount <= 0L
         val hasDepositError = s.selectedDepositAccount == null
+
+        if (s.type == TransactionType.TRANSFER) {
+            val hasSameAccount = s.selectedDepositAccount != null && s.toDepositAccount != null &&
+                    s.selectedDepositAccount.id == s.toDepositAccount.id
+            val hasToError = s.toDepositAccount == null
+            if (hasAmountError || hasDepositError || hasToError || hasSameAccount) {
+                _state.update { it.copy(
+                    amountError = hasAmountError,
+                    depositError = hasDepositError,
+                    toDepositError = hasToError,
+                    sameAccountError = hasSameAccount
+                )}
+                return
+            }
+            viewModelScope.launch {
+                runCatching {
+                    insertTransferUseCase(
+                        userId = userId,
+                        fromAccountId = s.selectedDepositAccount!!.id,
+                        toAccountId = s.toDepositAccount!!.id,
+                        amount = amount,
+                        date = s.date,
+                        description = s.description.ifBlank { null }
+                    )
+                }
+                    .onSuccess { _state.update { it.copy(isSaved = true) } }
+                    .onFailure { e -> _state.update { it.copy(errorMessage = e.message) } }
+            }
+            return
+        }
+
         val hasDestinationError = s.type == TransactionType.EXPENSE && s.selectedDestinationAccount == null
         val hasSubAccountError = s.type == TransactionType.EXPENSE && s.destinationNeedsSubAccount && s.selectedSubAccount == null
 
