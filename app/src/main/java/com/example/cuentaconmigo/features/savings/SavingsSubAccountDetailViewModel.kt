@@ -13,6 +13,7 @@ import com.example.cuentaconmigo.domain.repository.DepositAccountRepository
 import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
 import com.example.cuentaconmigo.domain.repository.SavingsMovementRepository
 import com.example.cuentaconmigo.domain.repository.TransactionRepository
+import com.example.cuentaconmigo.domain.usecase.DeleteTransactionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -42,6 +43,7 @@ sealed class SavingsEntry {
 class SavingsSubAccountDetailViewModel @Inject constructor(
     private val savingsMovementRepository: SavingsMovementRepository,
     private val transactionRepository: TransactionRepository,
+    private val deleteTransactionUseCase: DeleteTransactionUseCase,
     private val destinationAccountRepository: DestinationAccountRepository,
     private val depositAccountRepository: DepositAccountRepository,
     savedStateHandle: SavedStateHandle
@@ -131,7 +133,7 @@ class SavingsSubAccountDetailViewModel @Inject constructor(
 
     fun deleteDeposit(transaction: Transaction) {
         viewModelScope.launch {
-            runCatching { transactionRepository.delete(transaction) }
+            runCatching { deleteTransactionUseCase(transaction) }
                 .onFailure { _errorMessage.value = it.message }
         }
     }
