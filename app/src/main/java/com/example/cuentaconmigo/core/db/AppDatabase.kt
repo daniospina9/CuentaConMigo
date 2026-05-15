@@ -9,6 +9,7 @@ import com.example.cuentaconmigo.core.db.converters.Converters
 import com.example.cuentaconmigo.core.db.dao.AssetLiabilityDao
 import com.example.cuentaconmigo.core.db.dao.AssetOperationDao
 import com.example.cuentaconmigo.core.db.dao.CreditCardDao
+import com.example.cuentaconmigo.core.db.dao.CreditCardExtractDao
 import com.example.cuentaconmigo.core.db.dao.CreditCardTransactionDao
 import com.example.cuentaconmigo.core.db.dao.DepositAccountDao
 import com.example.cuentaconmigo.core.db.dao.DestinationAccountDao
@@ -19,6 +20,7 @@ import com.example.cuentaconmigo.core.db.dao.UserDao
 import com.example.cuentaconmigo.core.db.entities.AssetLiabilityEntity
 import com.example.cuentaconmigo.core.db.entities.AssetOperationEntity
 import com.example.cuentaconmigo.core.db.entities.CreditCardEntity
+import com.example.cuentaconmigo.core.db.entities.CreditCardExtractEntity
 import com.example.cuentaconmigo.core.db.entities.CreditCardTransactionEntity
 import com.example.cuentaconmigo.core.db.entities.DepositAccountEntity
 import com.example.cuentaconmigo.core.db.entities.DestinationAccountEntity
@@ -38,9 +40,10 @@ import com.example.cuentaconmigo.core.db.entities.UserEntity
         AssetLiabilityEntity::class,
         SavingsMovementEntity::class,
         CreditCardEntity::class,
-        CreditCardTransactionEntity::class
+        CreditCardTransactionEntity::class,
+        CreditCardExtractEntity::class
     ],
-    version = 13,
+    version = 14,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -55,6 +58,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun savingsMovementDao(): SavingsMovementDao
     abstract fun creditCardDao(): CreditCardDao
     abstract fun creditCardTransactionDao(): CreditCardTransactionDao
+    abstract fun creditCardExtractDao(): CreditCardExtractDao
 
     companion object {
         val MIGRATION_2_3 = object : Migration(2, 3) {
@@ -251,6 +255,29 @@ abstract class AppDatabase : RoomDatabase() {
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_userId ON transactions(userId)")
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_depositAccountId ON transactions(depositAccountId)")
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_destinationAccountId ON transactions(destinationAccountId)")
+            }
+        }
+
+        val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS credit_card_extracts (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        creditCardId INTEGER NOT NULL,
+                        billingAmount INTEGER NOT NULL,
+                        currentInterest INTEGER NOT NULL,
+                        lateInterest INTEGER NOT NULL,
+                        otherCharges INTEGER NOT NULL,
+                        paymentsAndCredits INTEGER NOT NULL,
+                        totalBankBalance INTEGER NOT NULL,
+                        minimumPayment INTEGER NOT NULL,
+                        uncollectedInterest INTEGER NOT NULL,
+                        isReconciled INTEGER NOT NULL DEFAULT 0,
+                        registeredAt INTEGER NOT NULL,
+                        FOREIGN KEY(creditCardId) REFERENCES credit_cards(id) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_credit_card_extracts_creditCardId ON credit_card_extracts(creditCardId)")
             }
         }
 

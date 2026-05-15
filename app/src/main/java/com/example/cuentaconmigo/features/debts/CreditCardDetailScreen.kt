@@ -10,8 +10,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextRange
@@ -27,6 +29,7 @@ import com.example.cuentaconmigo.domain.model.CreditCardTransaction
 import com.example.cuentaconmigo.domain.model.CreditCardTransactionType
 import com.example.cuentaconmigo.domain.model.DepositAccount
 import com.example.cuentaconmigo.domain.model.DestinationAccount
+import com.example.cuentaconmigo.domain.model.ExtractReconciliation
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -45,9 +48,13 @@ fun CreditCardDetailScreen(
     val purchaseSubAccounts by viewModel.purchaseSubAccounts.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
+    val reconciliation by viewModel.reconciliation.collectAsState()
+
     var showPurchaseDialog by remember { mutableStateOf(false) }
     var showPaymentDialog by remember { mutableStateOf(false) }
     var showChargeDialog by remember { mutableStateOf(false) }
+    var showExtractDialog by remember { mutableStateOf(false) }
+    var showReconciliationDialog by remember { mutableStateOf(false) }
     var txToDelete by remember { mutableStateOf<CreditCardTransaction?>(null) }
     var txToEdit by remember { mutableStateOf<CreditCardTransaction?>(null) }
     val tem = viewModel.tem
@@ -171,6 +178,74 @@ fun CreditCardDetailScreen(
                 }
             }
 
+            // Reconciliation banner
+            reconciliation?.let { rec ->
+                item {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (rec.hasDifference)
+                                MaterialTheme.colorScheme.errorContainer
+                            else
+                                MaterialTheme.colorScheme.tertiaryContainer
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    Icons.Default.Warning,
+                                    contentDescription = null,
+                                    tint = if (rec.hasDifference)
+                                        MaterialTheme.colorScheme.onErrorContainer
+                                    else
+                                        MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                                Column {
+                                    if (rec.hasDifference) {
+                                        Text(
+                                            "Diferencia con extracto",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onErrorContainer
+                                        )
+                                        Text(
+                                            rec.diff.toCopString(),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onErrorContainer
+                                        )
+                                    } else {
+                                        Text(
+                                            "Extracto registrado",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                                        )
+                                        Text(
+                                            "Saldos coinciden",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                                        )
+                                    }
+                                }
+                            }
+                            TextButton(onClick = { showReconciliationDialog = true }) {
+                                Text("Ver detalle")
+                            }
+                        }
+                    }
+                }
+            }
+
             // Action buttons
             item {
                 Column(
@@ -196,6 +271,10 @@ fun CreditCardDetailScreen(
                         onClick = { showChargeDialog = true },
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("Registrar cargo") }
+                    OutlinedButton(
+                        onClick = { showExtractDialog = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Registrar extracto") }
                 }
             }
 
@@ -292,6 +371,42 @@ fun CreditCardDetailScreen(
             onConfirm = { updated -> viewModel.updateTransaction(updated); txToEdit = null },
             onDismiss = { txToEdit = null }
         )
+    }
+
+    if (showExtractDialog) {
+        RegisterExtractDialog(
+            onConfirm = { billingAmount, currentInterest, lateInterest, otherCharges, paymentsAndCredits, totalBankBalance, minimumPayment, uncollectedInterest ->
+                viewModel.registerExtract(
+                    billingAmount = billingAmount,
+                    currentInterest = currentInterest,
+                    lateInterest = lateInterest,
+                    otherCharges = otherCharges,
+                    paymentsAndCredits = paymentsAndCredits,
+                    totalBankBalance = totalBankBalance,
+                    minimumPayment = minimumPayment,
+                    uncollectedInterest = uncollectedInterest
+                )
+                showExtractDialog = false
+            },
+            onDismiss = { showExtractDialog = false }
+        )
+    }
+
+    if (showReconciliationDialog) {
+        reconciliation?.let { rec ->
+            ReconciliationDetailDialog(
+                reconciliation = rec,
+                onAdjust = { type ->
+                    viewModel.reconcileExtract(rec.extract, kotlin.math.abs(rec.diff), type)
+                    showReconciliationDialog = false
+                },
+                onIgnore = {
+                    viewModel.ignoreReconciliation(rec.extract)
+                    showReconciliationDialog = false
+                },
+                onDismiss = { showReconciliationDialog = false }
+            )
+        }
     }
 
 }
@@ -827,5 +942,244 @@ private fun EditCreditCardTxDialog(
             ) { Text("Guardar") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
+}
+
+@Composable
+private fun RegisterExtractDialog(
+    onConfirm: (billingAmount: Long, currentInterest: Long, lateInterest: Long, otherCharges: Long, paymentsAndCredits: Long, totalBankBalance: Long, minimumPayment: Long, uncollectedInterest: Long) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var billingAmountTfv by remember { mutableStateOf(TextFieldValue("")) }
+    var currentInterestTfv by remember { mutableStateOf(TextFieldValue("")) }
+    var lateInterestTfv by remember { mutableStateOf(TextFieldValue("")) }
+    var otherChargesTfv by remember { mutableStateOf(TextFieldValue("")) }
+    var paymentsAndCreditsTfv by remember { mutableStateOf(TextFieldValue("")) }
+    var totalBankBalanceTfv by remember { mutableStateOf(TextFieldValue("")) }
+    var minimumPaymentTfv by remember { mutableStateOf(TextFieldValue("")) }
+    var uncollectedInterestTfv by remember { mutableStateOf(TextFieldValue("")) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Registrar extracto") },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    "Ingresa los valores del extracto bancario de este mes.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedTextField(
+                    value = billingAmountTfv,
+                    onValueChange = { billingAmountTfv = filterAmountInput(billingAmountTfv, it) },
+                    label = { Text("Facturación del mes") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = currentInterestTfv,
+                    onValueChange = { currentInterestTfv = filterAmountInput(currentInterestTfv, it) },
+                    label = { Text("Intereses corrientes") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = lateInterestTfv,
+                    onValueChange = { lateInterestTfv = filterAmountInput(lateInterestTfv, it) },
+                    label = { Text("Intereses de mora") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = otherChargesTfv,
+                    onValueChange = { otherChargesTfv = filterAmountInput(otherChargesTfv, it) },
+                    label = { Text("Otros cargos (cuota de manejo, etc.)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = paymentsAndCreditsTfv,
+                    onValueChange = { paymentsAndCreditsTfv = filterAmountInput(paymentsAndCreditsTfv, it) },
+                    label = { Text("Pagos y abonos según banco") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = totalBankBalanceTfv,
+                    onValueChange = { totalBankBalanceTfv = filterAmountInput(totalBankBalanceTfv, it) },
+                    label = { Text("Saldo total según banco") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = minimumPaymentTfv,
+                    onValueChange = { minimumPaymentTfv = filterAmountInput(minimumPaymentTfv, it) },
+                    label = { Text("Pago mínimo") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = uncollectedInterestTfv,
+                    onValueChange = { uncollectedInterestTfv = filterAmountInput(uncollectedInterestTfv, it) },
+                    label = { Text("Intereses no cobrados") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            val totalBank = totalBankBalanceTfv.text.parseToCentavos() ?: 0L
+            TextButton(
+                onClick = {
+                    onConfirm(
+                        billingAmountTfv.text.parseToCentavos() ?: 0L,
+                        currentInterestTfv.text.parseToCentavos() ?: 0L,
+                        lateInterestTfv.text.parseToCentavos() ?: 0L,
+                        otherChargesTfv.text.parseToCentavos() ?: 0L,
+                        paymentsAndCreditsTfv.text.parseToCentavos() ?: 0L,
+                        totalBank,
+                        minimumPaymentTfv.text.parseToCentavos() ?: 0L,
+                        uncollectedInterestTfv.text.parseToCentavos() ?: 0L
+                    )
+                },
+                enabled = totalBank > 0
+            ) { Text("Registrar") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReconciliationDetailDialog(
+    reconciliation: ExtractReconciliation,
+    onAdjust: (type: CreditCardTransactionType) -> Unit,
+    onIgnore: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val extract = reconciliation.extract
+    val adjustTypeOptions = listOf(
+        "Interés" to CreditCardTransactionType.INTEREST,
+        "Cargo / Comisión" to CreditCardTransactionType.FEE
+    )
+    var selectedTypeLabel by remember { mutableStateOf(adjustTypeOptions.first().first) }
+    var selectedType by remember { mutableStateOf(adjustTypeOptions.first().second) }
+    var menuExpanded by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Detalle del extracto") },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                @Composable
+                fun ExtractRow(label: String, value: Long) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text(value.toCopString(), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+
+                ExtractRow("Facturación del mes", extract.billingAmount)
+                ExtractRow("Intereses corrientes", extract.currentInterest)
+                ExtractRow("Intereses de mora", extract.lateInterest)
+                ExtractRow("Otros cargos", extract.otherCharges)
+                ExtractRow("Pagos y abonos (banco)", extract.paymentsAndCredits)
+                ExtractRow("Pago mínimo", extract.minimumPayment)
+                ExtractRow("Intereses no cobrados", extract.uncollectedInterest)
+                HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Saldo banco", style = MaterialTheme.typography.labelMedium)
+                    Text(extract.totalBankBalance.toCopString(), style = MaterialTheme.typography.bodyMedium)
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Saldo app", style = MaterialTheme.typography.labelMedium)
+                    Text(reconciliation.appDebt.toCopString(), style = MaterialTheme.typography.bodyMedium)
+                }
+                HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Diferencia", style = MaterialTheme.typography.labelMedium)
+                    Text(
+                        reconciliation.diff.toCopString(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (reconciliation.hasDifference) MaterialTheme.colorScheme.error else Color(0xFF2E7D32)
+                    )
+                }
+                if (reconciliation.hasDifference) {
+                    Text(
+                        "Selecciona el tipo de ajuste que se registrará por la diferencia:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                    ExposedDropdownMenuBox(
+                        expanded = menuExpanded,
+                        onExpandedChange = { menuExpanded = it }
+                    ) {
+                        OutlinedTextField(
+                            value = selectedTypeLabel,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Tipo de ajuste") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = menuExpanded) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false }
+                        ) {
+                            adjustTypeOptions.forEach { (label, type) ->
+                                DropdownMenuItem(
+                                    text = { Text(label) },
+                                    onClick = {
+                                        selectedTypeLabel = label
+                                        selectedType = type
+                                        menuExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            if (reconciliation.hasDifference) {
+                TextButton(onClick = { onAdjust(selectedType) }) {
+                    Text("Ajustar y conciliar")
+                }
+            } else {
+                TextButton(onClick = onIgnore) {
+                    Text("Confirmar conciliación")
+                }
+            }
+        },
+        dismissButton = {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (reconciliation.hasDifference) {
+                    TextButton(onClick = onIgnore) { Text("Ignorar diferencia") }
+                }
+                TextButton(onClick = onDismiss) { Text("Cerrar") }
+            }
+        }
     )
 }

@@ -6,6 +6,7 @@ import com.example.cuentaconmigo.core.db.AppDatabase
 import com.example.cuentaconmigo.core.db.dao.AssetLiabilityDao
 import com.example.cuentaconmigo.core.db.dao.AssetOperationDao
 import com.example.cuentaconmigo.core.db.dao.CreditCardDao
+import com.example.cuentaconmigo.core.db.dao.CreditCardExtractDao
 import com.example.cuentaconmigo.core.db.dao.CreditCardTransactionDao
 import com.example.cuentaconmigo.core.db.dao.DepositAccountDao
 import com.example.cuentaconmigo.core.db.dao.DestinationAccountDao
@@ -39,7 +40,8 @@ object DatabaseModule {
                 AppDatabase.MIGRATION_9_10,
                 AppDatabase.MIGRATION_10_11,
                 AppDatabase.MIGRATION_11_12,
-                AppDatabase.MIGRATION_12_13
+                AppDatabase.MIGRATION_12_13,
+                AppDatabase.MIGRATION_13_14
             )
             .build()
 
@@ -72,4 +74,7 @@ object DatabaseModule {
 
     @Provides
     fun provideCreditCardTransactionDao(db: AppDatabase): CreditCardTransactionDao = db.creditCardTransactionDao()
+
+    @Provides
+    fun provideCreditCardExtractDao(db: AppDatabase): CreditCardExtractDao = db.creditCardExtractDao()
 }

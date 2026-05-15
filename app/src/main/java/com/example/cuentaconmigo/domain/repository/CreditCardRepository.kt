@@ -1,6 +1,7 @@
 package com.example.cuentaconmigo.domain.repository
 
 import com.example.cuentaconmigo.domain.model.CreditCard
+import com.example.cuentaconmigo.domain.model.CreditCardExtract
 import com.example.cuentaconmigo.domain.model.CreditCardTransaction
 import kotlinx.coroutines.flow.Flow
 
@@ -17,4 +18,7 @@ interface CreditCardRepository {
     suspend fun updateTransaction(tx: CreditCardTransaction)
     suspend fun getTransactionByLinkedId(linkedTransactionId: Long): CreditCardTransaction?
     suspend fun hasTransactions(cardId: Long): Boolean
+    fun getExtracts(cardId: Long): Flow<List<CreditCardExtract>>
+    suspend fun insertExtract(extract: CreditCardExtract): Long
+    suspend fun updateExtract(extract: CreditCardExtract)
 }

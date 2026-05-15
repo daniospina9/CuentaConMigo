@@ -1,8 +1,10 @@
 package com.example.cuentaconmigo.core.db.repository.mappers
 
 import com.example.cuentaconmigo.core.db.entities.CreditCardEntity
+import com.example.cuentaconmigo.core.db.entities.CreditCardExtractEntity
 import com.example.cuentaconmigo.core.db.entities.CreditCardTransactionEntity
 import com.example.cuentaconmigo.domain.model.CreditCard
+import com.example.cuentaconmigo.domain.model.CreditCardExtract
 import com.example.cuentaconmigo.domain.model.CreditCardTransaction
 import com.example.cuentaconmigo.domain.model.CreditCardTransactionType
 import com.example.cuentaconmigo.domain.model.MinPaymentType
@@ -63,4 +65,34 @@ fun CreditCardTransaction.toEntity() = CreditCardTransactionEntity(
     destinationAccountId = destinationAccountId,
     linkedTransactionId = linkedTransactionId,
     installments = installments
+)
+
+fun CreditCardExtractEntity.toDomain() = CreditCardExtract(
+    id = id,
+    creditCardId = creditCardId,
+    billingAmount = billingAmount,
+    currentInterest = currentInterest,
+    lateInterest = lateInterest,
+    otherCharges = otherCharges,
+    paymentsAndCredits = paymentsAndCredits,
+    totalBankBalance = totalBankBalance,
+    minimumPayment = minimumPayment,
+    uncollectedInterest = uncollectedInterest,
+    isReconciled = isReconciled,
+    registeredAt = registeredAt
+)
+
+fun CreditCardExtract.toEntity() = CreditCardExtractEntity(
+    id = id,
+    creditCardId = creditCardId,
+    billingAmount = billingAmount,
+    currentInterest = currentInterest,
+    lateInterest = lateInterest,
+    otherCharges = otherCharges,
+    paymentsAndCredits = paymentsAndCredits,
+    totalBankBalance = totalBankBalance,
+    minimumPayment = minimumPayment,
+    uncollectedInterest = uncollectedInterest,
+    isReconciled = isReconciled,
+    registeredAt = registeredAt
 )

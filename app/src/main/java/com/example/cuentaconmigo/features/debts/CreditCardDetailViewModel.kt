@@ -5,16 +5,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cuentaconmigo.domain.model.AccountType
 import com.example.cuentaconmigo.domain.model.CreditCard
+import com.example.cuentaconmigo.domain.model.CreditCardExtract
 import com.example.cuentaconmigo.domain.model.CreditCardTransaction
 import com.example.cuentaconmigo.domain.model.CreditCardTransactionType
 import com.example.cuentaconmigo.domain.model.DepositAccount
 import com.example.cuentaconmigo.domain.model.DestinationAccount
+import com.example.cuentaconmigo.domain.model.ExtractReconciliation
 import com.example.cuentaconmigo.domain.model.MinPaymentType
 import com.example.cuentaconmigo.domain.repository.DepositAccountRepository
 import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
 import kotlinx.coroutines.Job
 import com.example.cuentaconmigo.domain.usecase.credit_card.DeleteCreditCardTransactionUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.GetCreditCardDetailUseCase
+import com.example.cuentaconmigo.domain.usecase.credit_card.ReconcileExtractUseCase
+import com.example.cuentaconmigo.domain.usecase.credit_card.RegisterExtractUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.RegisterPaymentUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.RegisterPurchaseUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.UpdateCreditCardTransactionUseCase
@@ -22,6 +26,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.example.cuentaconmigo.domain.repository.CreditCardRepository
 
 @HiltViewModel
 class CreditCardDetailViewModel @Inject constructor(
@@ -30,6 +35,9 @@ class CreditCardDetailViewModel @Inject constructor(
     private val registerPaymentUseCase: RegisterPaymentUseCase,
     private val deleteCreditCardTransactionUseCase: DeleteCreditCardTransactionUseCase,
     private val updateCreditCardTransactionUseCase: UpdateCreditCardTransactionUseCase,
+    private val registerExtractUseCase: RegisterExtractUseCase,
+    private val reconcileExtractUseCase: ReconcileExtractUseCase,
+    private val creditCardRepository: CreditCardRepository,
     private val depositAccountRepository: DepositAccountRepository,
     private val destinationAccountRepository: DestinationAccountRepository,
     savedStateHandle: SavedStateHandle
@@ -49,6 +57,27 @@ class CreditCardDetailViewModel @Inject constructor(
     val transactions: StateFlow<List<CreditCardTransaction>> =
         getCreditCardDetailUseCase.getTransactions(cardId)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val extracts: StateFlow<List<CreditCardExtract>> =
+        creditCardRepository.getExtracts(cardId)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val lastExtract: StateFlow<CreditCardExtract?> =
+        extracts.map { it.firstOrNull() }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val reconciliation: StateFlow<ExtractReconciliation?> =
+        combine(currentDebt, lastExtract) { debt, extract ->
+            extract ?: return@combine null
+            if (extract.isReconciled) return@combine null
+            val diff = extract.totalBankBalance - debt
+            ExtractReconciliation(
+                extract = extract,
+                appDebt = debt,
+                diff = diff,
+                hasDifference = diff != 0L
+            )
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val depositAccounts: StateFlow<List<DepositAccount>> =
         depositAccountRepository.getByUser(userId)
@@ -174,4 +203,60 @@ class CreditCardDetailViewModel @Inject constructor(
     }
 
     fun clearError() { _errorMessage.value = null }
+
+    fun registerExtract(
+        billingAmount: Long,
+        currentInterest: Long,
+        lateInterest: Long,
+        otherCharges: Long,
+        paymentsAndCredits: Long,
+        totalBankBalance: Long,
+        minimumPayment: Long,
+        uncollectedInterest: Long
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                registerExtractUseCase(
+                    CreditCardExtract(
+                        creditCardId = cardId,
+                        billingAmount = billingAmount,
+                        currentInterest = currentInterest,
+                        lateInterest = lateInterest,
+                        otherCharges = otherCharges,
+                        paymentsAndCredits = paymentsAndCredits,
+                        totalBankBalance = totalBankBalance,
+                        minimumPayment = minimumPayment,
+                        uncollectedInterest = uncollectedInterest
+                    )
+                )
+            }.onFailure { _errorMessage.value = it.message }
+        }
+    }
+
+    fun reconcileExtract(extract: CreditCardExtract, adjustmentAmount: Long?, adjustmentType: CreditCardTransactionType?) {
+        viewModelScope.launch {
+            runCatching {
+                if (adjustmentAmount != null && adjustmentAmount > 0 && adjustmentType != null) {
+                    registerPurchaseUseCase(
+                        creditCardId = cardId,
+                        userId = userId,
+                        amount = adjustmentAmount,
+                        description = "Ajuste extracto",
+                        destinationAccountId = null,
+                        date = System.currentTimeMillis(),
+                        type = adjustmentType,
+                        installments = 1
+                    )
+                }
+                reconcileExtractUseCase(extract)
+            }.onFailure { _errorMessage.value = it.message }
+        }
+    }
+
+    fun ignoreReconciliation(extract: CreditCardExtract) {
+        viewModelScope.launch {
+            runCatching { reconcileExtractUseCase(extract) }
+                .onFailure { _errorMessage.value = it.message }
+        }
+    }
 }

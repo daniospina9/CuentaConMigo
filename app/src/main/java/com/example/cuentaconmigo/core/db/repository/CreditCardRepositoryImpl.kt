@@ -1,10 +1,12 @@
 package com.example.cuentaconmigo.core.db.repository
 
 import com.example.cuentaconmigo.core.db.dao.CreditCardDao
+import com.example.cuentaconmigo.core.db.dao.CreditCardExtractDao
 import com.example.cuentaconmigo.core.db.dao.CreditCardTransactionDao
 import com.example.cuentaconmigo.core.db.repository.mappers.toDomain
 import com.example.cuentaconmigo.core.db.repository.mappers.toEntity
 import com.example.cuentaconmigo.domain.model.CreditCard
+import com.example.cuentaconmigo.domain.model.CreditCardExtract
 import com.example.cuentaconmigo.domain.model.CreditCardTransaction
 import com.example.cuentaconmigo.domain.repository.CreditCardRepository
 import kotlinx.coroutines.flow.Flow
@@ -15,7 +17,8 @@ import javax.inject.Singleton
 @Singleton
 class CreditCardRepositoryImpl @Inject constructor(
     private val cardDao: CreditCardDao,
-    private val txDao: CreditCardTransactionDao
+    private val txDao: CreditCardTransactionDao,
+    private val extractDao: CreditCardExtractDao
 ) : CreditCardRepository {
 
     override fun getActiveCards(userId: Long): Flow<List<CreditCard>> =
@@ -53,4 +56,13 @@ class CreditCardRepositoryImpl @Inject constructor(
 
     override suspend fun hasTransactions(cardId: Long): Boolean =
         txDao.countByCard(cardId) > 0
+
+    override fun getExtracts(cardId: Long): Flow<List<CreditCardExtract>> =
+        extractDao.getAll(cardId).map { list -> list.map { it.toDomain() } }
+
+    override suspend fun insertExtract(extract: CreditCardExtract): Long =
+        extractDao.insert(extract.toEntity())
+
+    override suspend fun updateExtract(extract: CreditCardExtract) =
+        extractDao.update(extract.toEntity())
 }
