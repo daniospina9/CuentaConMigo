@@ -12,6 +12,9 @@ interface CreditCardExtractDao {
     @Update
     suspend fun update(extract: CreditCardExtractEntity)
 
+    @Delete
+    suspend fun delete(extract: CreditCardExtractEntity)
+
     @Query("SELECT * FROM credit_card_extracts WHERE creditCardId = :cardId ORDER BY registeredAt DESC")
     fun getAll(cardId: Long): Flow<List<CreditCardExtractEntity>>
 }

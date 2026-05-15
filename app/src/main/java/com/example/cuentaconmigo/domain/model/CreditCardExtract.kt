@@ -3,6 +3,7 @@ package com.example.cuentaconmigo.domain.model
 data class CreditCardExtract(
     val id: Long = 0,
     val creditCardId: Long,
+    val cutOffDate: Long,
     val billingAmount: Long,
     val currentInterest: Long,
     val lateInterest: Long,

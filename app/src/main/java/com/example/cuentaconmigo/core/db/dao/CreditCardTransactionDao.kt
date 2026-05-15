@@ -37,4 +37,7 @@ interface CreditCardTransactionDao {
 
     @Query("SELECT COUNT(*) FROM credit_card_transactions WHERE creditCardId = :cardId")
     suspend fun countByCard(cardId: Long): Int
+
+    @Query("DELETE FROM credit_card_transactions WHERE extractId = :extractId")
+    suspend fun deleteByExtractId(extractId: Long)
 }

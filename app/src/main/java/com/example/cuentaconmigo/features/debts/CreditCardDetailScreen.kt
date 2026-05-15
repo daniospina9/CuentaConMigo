@@ -25,6 +25,7 @@ import com.example.cuentaconmigo.core.util.filterAmountInput
 import com.example.cuentaconmigo.core.util.parseToCentavos
 import com.example.cuentaconmigo.core.util.toCopString
 import com.example.cuentaconmigo.domain.model.AccountType
+import com.example.cuentaconmigo.domain.model.CreditCardExtract
 import com.example.cuentaconmigo.domain.model.CreditCardTransaction
 import com.example.cuentaconmigo.domain.model.CreditCardTransactionType
 import com.example.cuentaconmigo.domain.model.DepositAccount
@@ -48,6 +49,7 @@ fun CreditCardDetailScreen(
     val purchaseSubAccounts by viewModel.purchaseSubAccounts.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
+    val extracts by viewModel.extracts.collectAsState()
     val reconciliation by viewModel.reconciliation.collectAsState()
 
     var showPurchaseDialog by remember { mutableStateOf(false) }
@@ -55,6 +57,8 @@ fun CreditCardDetailScreen(
     var showChargeDialog by remember { mutableStateOf(false) }
     var showExtractDialog by remember { mutableStateOf(false) }
     var showReconciliationDialog by remember { mutableStateOf(false) }
+    var extractToEdit by remember { mutableStateOf<CreditCardExtract?>(null) }
+    var extractToDelete by remember { mutableStateOf<CreditCardExtract?>(null) }
     var txToDelete by remember { mutableStateOf<CreditCardTransaction?>(null) }
     var txToEdit by remember { mutableStateOf<CreditCardTransaction?>(null) }
     val tem = viewModel.tem
@@ -305,6 +309,34 @@ fun CreditCardDetailScreen(
                     HorizontalDivider()
                 }
             }
+
+            // Extractos header
+            item {
+                Text(
+                    "Extractos",
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp)
+                )
+            }
+
+            if (extracts.isEmpty()) {
+                item {
+                    Text(
+                        "Sin extractos registrados.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+            } else {
+                items(extracts, key = { it.id }) { extract ->
+                    ExtractRow(
+                        extract = extract,
+                        onEdit = { extractToEdit = extract },
+                        onDelete = { extractToDelete = extract }
+                    )
+                    HorizontalDivider()
+                }
+            }
         }
     }
 
@@ -375,8 +407,9 @@ fun CreditCardDetailScreen(
 
     if (showExtractDialog) {
         RegisterExtractDialog(
-            onConfirm = { billingAmount, currentInterest, lateInterest, otherCharges, paymentsAndCredits, totalBankBalance, minimumPayment, uncollectedInterest ->
+            onConfirm = { cutOffDate, billingAmount, currentInterest, lateInterest, otherCharges, paymentsAndCredits, totalBankBalance, minimumPayment, uncollectedInterest ->
                 viewModel.registerExtract(
+                    cutOffDate = cutOffDate,
                     billingAmount = billingAmount,
                     currentInterest = currentInterest,
                     lateInterest = lateInterest,
@@ -389,6 +422,43 @@ fun CreditCardDetailScreen(
                 showExtractDialog = false
             },
             onDismiss = { showExtractDialog = false }
+        )
+    }
+
+    extractToEdit?.let { extract ->
+        RegisterExtractDialog(
+            initialExtract = extract,
+            onConfirm = { cutOffDate, billingAmount, currentInterest, lateInterest, otherCharges, paymentsAndCredits, totalBankBalance, minimumPayment, uncollectedInterest ->
+                viewModel.updateExtract(
+                    extract.copy(
+                        cutOffDate = cutOffDate,
+                        billingAmount = billingAmount,
+                        currentInterest = currentInterest,
+                        lateInterest = lateInterest,
+                        otherCharges = otherCharges,
+                        paymentsAndCredits = paymentsAndCredits,
+                        totalBankBalance = totalBankBalance,
+                        minimumPayment = minimumPayment,
+                        uncollectedInterest = uncollectedInterest
+                    )
+                )
+                extractToEdit = null
+            },
+            onDismiss = { extractToEdit = null }
+        )
+    }
+
+    extractToDelete?.let { extract ->
+        AlertDialog(
+            onDismissRequest = { extractToDelete = null },
+            title = { Text("Eliminar extracto") },
+            text = { Text("¿Eliminar este extracto? También se eliminarán los intereses y cargos que generó automáticamente.") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.deleteExtract(extract); extractToDelete = null }) {
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = { TextButton(onClick = { extractToDelete = null }) { Text("Cancelar") } }
         )
     }
 
@@ -425,6 +495,7 @@ private fun CreditCardTxRow(
         CreditCardTransactionType.FEE -> "Cargo"
     }
     val isCredit = tx.type == CreditCardTransactionType.PAYMENT
+    val fromExtract = tx.extractId != null
 
     ListItem(
         headlineContent = {
@@ -435,23 +506,26 @@ private fun CreditCardTxRow(
         },
         supportingContent = {
             val desc = tx.description?.let { " · $it" } ?: ""
+            val extractTag = if (fromExtract) " · Extracto" else ""
             Text(
-                "$label · ${dateFormatter.format(Date(tx.date))}$desc",
+                "$label · ${dateFormatter.format(Date(tx.date))}$desc$extractTag",
                 style = MaterialTheme.typography.bodySmall
             )
         },
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onEdit),
-        trailingContent = {
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Eliminar",
-                    tint = MaterialTheme.colorScheme.error
-                )
+            .then(if (!fromExtract) Modifier.clickable(onClick = onEdit) else Modifier),
+        trailingContent = if (!fromExtract) {
+            {
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Eliminar",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
             }
-        }
+        } else null
     )
 }
 
@@ -946,32 +1020,91 @@ private fun EditCreditCardTxDialog(
 }
 
 @Composable
+private fun ExtractRow(
+    extract: CreditCardExtract,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
+    ListItem(
+        headlineContent = {
+            Text("Corte: ${dateFormatter.format(Date(extract.cutOffDate))}")
+        },
+        supportingContent = {
+            val status = if (extract.isReconciled) "Conciliado" else "Pendiente"
+            Text(
+                "Saldo banco: ${extract.totalBankBalance.toCopString()} · $status",
+                style = MaterialTheme.typography.bodySmall
+            )
+        },
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onEdit),
+        trailingContent = {
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 private fun RegisterExtractDialog(
-    onConfirm: (billingAmount: Long, currentInterest: Long, lateInterest: Long, otherCharges: Long, paymentsAndCredits: Long, totalBankBalance: Long, minimumPayment: Long, uncollectedInterest: Long) -> Unit,
+    initialExtract: CreditCardExtract? = null,
+    onConfirm: (cutOffDate: Long, billingAmount: Long, currentInterest: Long, lateInterest: Long, otherCharges: Long, paymentsAndCredits: Long, totalBankBalance: Long, minimumPayment: Long, uncollectedInterest: Long) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var billingAmountTfv by remember { mutableStateOf(TextFieldValue("")) }
-    var currentInterestTfv by remember { mutableStateOf(TextFieldValue("")) }
-    var lateInterestTfv by remember { mutableStateOf(TextFieldValue("")) }
-    var otherChargesTfv by remember { mutableStateOf(TextFieldValue("")) }
-    var paymentsAndCreditsTfv by remember { mutableStateOf(TextFieldValue("")) }
-    var totalBankBalanceTfv by remember { mutableStateOf(TextFieldValue("")) }
-    var minimumPaymentTfv by remember { mutableStateOf(TextFieldValue("")) }
-    var uncollectedInterestTfv by remember { mutableStateOf(TextFieldValue("")) }
+    fun Long?.toDisplayText() = if (this == null || this == 0L) "" else (this / 100).toString()
+
+    var cutOffDate by remember { mutableStateOf(initialExtract?.cutOffDate ?: System.currentTimeMillis()) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = cutOffDate)
+    val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
+
+    var billingAmountTfv by remember { mutableStateOf(TextFieldValue(initialExtract?.billingAmount.toDisplayText())) }
+    var currentInterestTfv by remember { mutableStateOf(TextFieldValue(initialExtract?.currentInterest.toDisplayText())) }
+    var lateInterestTfv by remember { mutableStateOf(TextFieldValue(initialExtract?.lateInterest.toDisplayText())) }
+    var otherChargesTfv by remember { mutableStateOf(TextFieldValue(initialExtract?.otherCharges.toDisplayText())) }
+    var paymentsAndCreditsTfv by remember { mutableStateOf(TextFieldValue(initialExtract?.paymentsAndCredits.toDisplayText())) }
+    var totalBankBalanceTfv by remember { mutableStateOf(TextFieldValue(initialExtract?.totalBankBalance.toDisplayText())) }
+    var minimumPaymentTfv by remember { mutableStateOf(TextFieldValue(initialExtract?.minimumPayment.toDisplayText())) }
+    var uncollectedInterestTfv by remember { mutableStateOf(TextFieldValue(initialExtract?.uncollectedInterest.toDisplayText())) }
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    cutOffDate = datePickerState.selectedDateMillis ?: cutOffDate
+                    showDatePicker = false
+                }) { Text("Aceptar") }
+            },
+            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") } }
+        ) { DatePicker(state = datePickerState) }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Registrar extracto") },
+        title = { Text(if (initialExtract != null) "Editar extracto" else "Registrar extracto") },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    "Ingresa los valores del extracto bancario de este mes.",
+                    "Ingresa los valores del extracto bancario.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Box {
+                    OutlinedTextField(
+                        value = dateFormatter.format(Date(cutOffDate)),
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Fecha de corte") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Box(modifier = Modifier.matchParentSize().clickable { showDatePicker = true })
+                }
                 OutlinedTextField(
                     value = billingAmountTfv,
                     onValueChange = { billingAmountTfv = filterAmountInput(billingAmountTfv, it) },
@@ -1043,6 +1176,7 @@ private fun RegisterExtractDialog(
             TextButton(
                 onClick = {
                     onConfirm(
+                        cutOffDate,
                         billingAmountTfv.text.parseToCentavos() ?: 0L,
                         currentInterestTfv.text.parseToCentavos() ?: 0L,
                         lateInterestTfv.text.parseToCentavos() ?: 0L,
@@ -1054,7 +1188,7 @@ private fun RegisterExtractDialog(
                     )
                 },
                 enabled = totalBank > 0
-            ) { Text("Registrar") }
+            ) { Text(if (initialExtract != null) "Guardar" else "Registrar") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )

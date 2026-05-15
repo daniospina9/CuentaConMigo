@@ -51,7 +51,8 @@ fun CreditCardTransactionEntity.toDomain() = CreditCardTransaction(
     date = date,
     destinationAccountId = destinationAccountId,
     linkedTransactionId = linkedTransactionId,
-    installments = installments
+    installments = installments,
+    extractId = extractId
 )
 
 fun CreditCardTransaction.toEntity() = CreditCardTransactionEntity(
@@ -64,12 +65,14 @@ fun CreditCardTransaction.toEntity() = CreditCardTransactionEntity(
     date = date,
     destinationAccountId = destinationAccountId,
     linkedTransactionId = linkedTransactionId,
-    installments = installments
+    installments = installments,
+    extractId = extractId
 )
 
 fun CreditCardExtractEntity.toDomain() = CreditCardExtract(
     id = id,
     creditCardId = creditCardId,
+    cutOffDate = cutOffDate,
     billingAmount = billingAmount,
     currentInterest = currentInterest,
     lateInterest = lateInterest,
@@ -85,6 +88,7 @@ fun CreditCardExtractEntity.toDomain() = CreditCardExtract(
 fun CreditCardExtract.toEntity() = CreditCardExtractEntity(
     id = id,
     creditCardId = creditCardId,
+    cutOffDate = cutOffDate,
     billingAmount = billingAmount,
     currentInterest = currentInterest,
     lateInterest = lateInterest,

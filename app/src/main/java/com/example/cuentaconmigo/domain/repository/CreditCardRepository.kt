@@ -21,4 +21,6 @@ interface CreditCardRepository {
     fun getExtracts(cardId: Long): Flow<List<CreditCardExtract>>
     suspend fun insertExtract(extract: CreditCardExtract): Long
     suspend fun updateExtract(extract: CreditCardExtract)
+    suspend fun deleteExtract(extract: CreditCardExtract)
+    suspend fun deleteTransactionsByExtractId(extractId: Long)
 }

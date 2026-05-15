@@ -43,7 +43,7 @@ import com.example.cuentaconmigo.core.db.entities.UserEntity
         CreditCardTransactionEntity::class,
         CreditCardExtractEntity::class
     ],
-    version = 14,
+    version = 15,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -278,6 +278,13 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                 """.trimIndent())
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_credit_card_extracts_creditCardId ON credit_card_extracts(creditCardId)")
+            }
+        }
+
+        val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE credit_card_extracts ADD COLUMN cutOffDate INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE credit_card_transactions ADD COLUMN extractId INTEGER")
             }
         }
 

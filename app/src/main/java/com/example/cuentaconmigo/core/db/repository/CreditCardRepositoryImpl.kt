@@ -65,4 +65,10 @@ class CreditCardRepositoryImpl @Inject constructor(
 
     override suspend fun updateExtract(extract: CreditCardExtract) =
         extractDao.update(extract.toEntity())
+
+    override suspend fun deleteExtract(extract: CreditCardExtract) =
+        extractDao.delete(extract.toEntity())
+
+    override suspend fun deleteTransactionsByExtractId(extractId: Long) =
+        txDao.deleteByExtractId(extractId)
 }

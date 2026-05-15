@@ -16,12 +16,14 @@ import com.example.cuentaconmigo.domain.repository.DepositAccountRepository
 import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
 import kotlinx.coroutines.Job
 import com.example.cuentaconmigo.domain.usecase.credit_card.DeleteCreditCardTransactionUseCase
+import com.example.cuentaconmigo.domain.usecase.credit_card.DeleteExtractUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.GetCreditCardDetailUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.ReconcileExtractUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.RegisterExtractUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.RegisterPaymentUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.RegisterPurchaseUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.UpdateCreditCardTransactionUseCase
+import com.example.cuentaconmigo.domain.usecase.credit_card.UpdateExtractUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -36,6 +38,8 @@ class CreditCardDetailViewModel @Inject constructor(
     private val deleteCreditCardTransactionUseCase: DeleteCreditCardTransactionUseCase,
     private val updateCreditCardTransactionUseCase: UpdateCreditCardTransactionUseCase,
     private val registerExtractUseCase: RegisterExtractUseCase,
+    private val updateExtractUseCase: UpdateExtractUseCase,
+    private val deleteExtractUseCase: DeleteExtractUseCase,
     private val reconcileExtractUseCase: ReconcileExtractUseCase,
     private val creditCardRepository: CreditCardRepository,
     private val depositAccountRepository: DepositAccountRepository,
@@ -205,6 +209,7 @@ class CreditCardDetailViewModel @Inject constructor(
     fun clearError() { _errorMessage.value = null }
 
     fun registerExtract(
+        cutOffDate: Long,
         billingAmount: Long,
         currentInterest: Long,
         lateInterest: Long,
@@ -219,6 +224,7 @@ class CreditCardDetailViewModel @Inject constructor(
                 registerExtractUseCase(
                     CreditCardExtract(
                         creditCardId = cardId,
+                        cutOffDate = cutOffDate,
                         billingAmount = billingAmount,
                         currentInterest = currentInterest,
                         lateInterest = lateInterest,
@@ -227,9 +233,24 @@ class CreditCardDetailViewModel @Inject constructor(
                         totalBankBalance = totalBankBalance,
                         minimumPayment = minimumPayment,
                         uncollectedInterest = uncollectedInterest
-                    )
+                    ),
+                    userId = userId
                 )
             }.onFailure { _errorMessage.value = it.message }
+        }
+    }
+
+    fun updateExtract(extract: CreditCardExtract) {
+        viewModelScope.launch {
+            runCatching { updateExtractUseCase(extract, userId) }
+                .onFailure { _errorMessage.value = it.message }
+        }
+    }
+
+    fun deleteExtract(extract: CreditCardExtract) {
+        viewModelScope.launch {
+            runCatching { deleteExtractUseCase(extract) }
+                .onFailure { _errorMessage.value = it.message }
         }
     }
 
