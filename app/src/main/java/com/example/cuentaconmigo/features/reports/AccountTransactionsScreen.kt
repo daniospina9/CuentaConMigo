@@ -30,6 +30,7 @@ fun AccountTransactionsScreen(
     val transactions by viewModel.transactions.collectAsState()
     val showDeleteConfirm by viewModel.showDeleteConfirm.collectAsState()
     val extractProtectedIds by viewModel.extractProtectedIds.collectAsState()
+    val tcPurchaseLinkedIds by viewModel.tcPurchaseLinkedIds.collectAsState()
     val formatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("es", "CO")) }
 
     if (showDeleteConfirm) {
@@ -75,11 +76,13 @@ fun AccountTransactionsScreen(
             ) {
                 items(transactions, key = { it.id }) { tx ->
                     val fromExtract = tx.id in extractProtectedIds
+                    val fromTcPurchase = tx.id in tcPurchaseLinkedIds
                     TransactionListItem(
                         tx = tx,
                         formatter = formatter,
                         fromExtract = fromExtract,
-                        onEdit = if (fromExtract) null else ({ onNavigateToEdit(tx) }),
+                        fromTcPurchase = fromTcPurchase,
+                        onEdit = if (fromExtract || fromTcPurchase) null else ({ onNavigateToEdit(tx) }),
                         onDelete = if (fromExtract) null else ({ viewModel.requestDelete(tx) })
                     )
                     HorizontalDivider()
@@ -95,6 +98,7 @@ internal fun TransactionListItem(
     tx: Transaction,
     formatter: DateTimeFormatter,
     fromExtract: Boolean = false,
+    fromTcPurchase: Boolean = false,
     onEdit: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null
 ) {
@@ -113,8 +117,12 @@ internal fun TransactionListItem(
             ),
             headlineContent = { Text(tx.description ?: "Sin descripción") },
             supportingContent = {
-                val extractTag = if (fromExtract) " · Extracto" else ""
-                Text(tx.date.format(formatter) + extractTag)
+                val tag = when {
+                    fromExtract -> " · Extracto TC"
+                    fromTcPurchase -> " · Tarjeta de crédito"
+                    else -> ""
+                }
+                Text(tx.date.format(formatter) + tag)
             },
             trailingContent = {
                 Text(

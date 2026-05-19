@@ -43,6 +43,10 @@ class AccountTransactionsViewModel @Inject constructor(
         emit(creditCardRepository.getExtractLinkedTransactionIds())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
+    val tcPurchaseLinkedIds: StateFlow<Set<Long>> = flow {
+        emit(creditCardRepository.getTcPurchaseLinkedTransactionIds())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
     private var pendingDelete: Transaction? = null
 
     private val _showDeleteConfirm = MutableStateFlow(false)

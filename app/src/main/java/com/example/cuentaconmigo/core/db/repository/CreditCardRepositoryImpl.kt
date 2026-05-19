@@ -75,6 +75,9 @@ class CreditCardRepositoryImpl @Inject constructor(
     override suspend fun getExtractLinkedTransactionIds(): Set<Long> =
         txDao.getExtractLinkedTransactionIds().toSet()
 
+    override suspend fun getTcPurchaseLinkedTransactionIds(): Set<Long> =
+        txDao.getTcPurchaseLinkedTransactionIds().toSet()
+
     override suspend fun deleteTransactionsByExtractId(extractId: Long) =
         txDao.deleteByExtractId(extractId)
 }
