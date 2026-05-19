@@ -41,6 +41,9 @@ interface CreditCardTransactionDao {
     @Query("SELECT * FROM credit_card_transactions WHERE extractId = :extractId")
     suspend fun getByExtractId(extractId: Long): List<CreditCardTransactionEntity>
 
+    @Query("SELECT linkedTransactionId FROM credit_card_transactions WHERE extractId IS NOT NULL AND linkedTransactionId IS NOT NULL")
+    suspend fun getExtractLinkedTransactionIds(): List<Long>
+
     @Query("DELETE FROM credit_card_transactions WHERE extractId = :extractId")
     suspend fun deleteByExtractId(extractId: Long)
 }

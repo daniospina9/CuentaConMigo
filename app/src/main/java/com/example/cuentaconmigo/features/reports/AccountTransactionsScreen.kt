@@ -29,6 +29,7 @@ fun AccountTransactionsScreen(
 ) {
     val transactions by viewModel.transactions.collectAsState()
     val showDeleteConfirm by viewModel.showDeleteConfirm.collectAsState()
+    val extractProtectedIds by viewModel.extractProtectedIds.collectAsState()
     val formatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("es", "CO")) }
 
     if (showDeleteConfirm) {
@@ -73,11 +74,13 @@ fun AccountTransactionsScreen(
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
                 items(transactions, key = { it.id }) { tx ->
+                    val fromExtract = tx.id in extractProtectedIds
                     TransactionListItem(
                         tx = tx,
                         formatter = formatter,
-                        onEdit = { onNavigateToEdit(tx) },
-                        onDelete = { viewModel.requestDelete(tx) }
+                        fromExtract = fromExtract,
+                        onEdit = if (fromExtract) null else ({ onNavigateToEdit(tx) }),
+                        onDelete = if (fromExtract) null else ({ viewModel.requestDelete(tx) })
                     )
                     HorizontalDivider()
                 }
@@ -91,6 +94,7 @@ fun AccountTransactionsScreen(
 internal fun TransactionListItem(
     tx: Transaction,
     formatter: DateTimeFormatter,
+    fromExtract: Boolean = false,
     onEdit: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null
 ) {
@@ -108,7 +112,10 @@ internal fun TransactionListItem(
                 onLongClick = { if (onEdit != null || onDelete != null) menuExpanded = true }
             ),
             headlineContent = { Text(tx.description ?: "Sin descripción") },
-            supportingContent = { Text(tx.date.format(formatter)) },
+            supportingContent = {
+                val extractTag = if (fromExtract) " · Extracto" else ""
+                Text(tx.date.format(formatter) + extractTag)
+            },
             trailingContent = {
                 Text(
                     tx.amount.toCopString(),
