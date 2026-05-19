@@ -17,4 +17,5 @@ interface DestinationAccountRepository {
     suspend fun hasSubAccounts(accountId: Long): Boolean
     suspend fun forceDelete(accountId: Long): Result<Unit>
     suspend fun forceDeleteWithChildren(accountId: Long): Result<Unit>
+    suspend fun getByName(userId: Long, name: String): DestinationAccount?
 }

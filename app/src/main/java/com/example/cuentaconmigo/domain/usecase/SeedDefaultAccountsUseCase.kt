@@ -15,7 +15,8 @@ class SeedDefaultAccountsUseCase @Inject constructor(
             DestinationAccount(0, userId, "Juegos y Diversión",                AccountType.EXPENSE,    isDefault = true),
             DestinationAccount(0, userId, "Ahorros a Largo Plazo para gastar", AccountType.SAVINGS,    isDefault = true),
             DestinationAccount(0, userId, "Donativos",                         AccountType.EXPENSE,    isDefault = true),
-            DestinationAccount(0, userId, "Inversiones",                       AccountType.INVESTMENT, isDefault = true)
+            DestinationAccount(0, userId, "Inversiones",                       AccountType.INVESTMENT, isDefault = true),
+            DestinationAccount(0, userId, "Pago de Intereses",                 AccountType.EXPENSE,    isDefault = true)
         )
         destinationAccountRepository.insertAll(defaults)
     }
