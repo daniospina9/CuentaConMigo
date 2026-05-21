@@ -57,4 +57,7 @@ class DestinationAccountRepositoryImpl @Inject constructor(
     override suspend fun forceDeleteWithChildren(accountId: Long): Result<Unit> = runCatching {
         dao.deleteByIdOrParentId(accountId)
     }
+
+    override suspend fun getByName(userId: Long, name: String): DestinationAccount? =
+        dao.getByName(userId, name)?.toDomain()
 }

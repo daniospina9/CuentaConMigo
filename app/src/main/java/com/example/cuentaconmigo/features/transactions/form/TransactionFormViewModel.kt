@@ -104,7 +104,7 @@ class TransactionFormViewModel @Inject constructor(
                                     selectedDepositAccount = depositAccount,
                                     selectedDestinationAccount = parentAccount ?: destinationAccount,
                                     selectedSubAccount = if (parentAccount != null) destinationAccount else null,
-                                    amountText = tx.amount.toString(),
+                                    amountText = tx.amount.centavosToAmountText(),
                                     date = tx.date,
                                     description = tx.description ?: ""
                                 )
@@ -231,4 +231,13 @@ class TransactionFormViewModel @Inject constructor(
     }
 
     fun clearError() = _state.update { it.copy(errorMessage = null) }
+
+    private fun Long.centavosToAmountText(): String {
+        val pesos = this / 100
+        val cents = this % 100
+        val pesosFormatted = pesos.toString()
+            .reversed().chunked(3).joinToString(".").reversed()
+        return if (cents > 0L) "$pesosFormatted,${cents.toString().padStart(2, '0')}"
+        else pesosFormatted
+    }
 }

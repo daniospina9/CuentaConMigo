@@ -29,6 +29,8 @@ fun AccountTransactionsScreen(
 ) {
     val transactions by viewModel.transactions.collectAsState()
     val showDeleteConfirm by viewModel.showDeleteConfirm.collectAsState()
+    val extractProtectedIds by viewModel.extractProtectedIds.collectAsState()
+    val tcPurchaseLinkedIds by viewModel.tcPurchaseLinkedIds.collectAsState()
     val formatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("es", "CO")) }
 
     if (showDeleteConfirm) {
@@ -73,11 +75,15 @@ fun AccountTransactionsScreen(
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
                 items(transactions, key = { it.id }) { tx ->
+                    val fromExtract = tx.id in extractProtectedIds
+                    val fromTcPurchase = tx.id in tcPurchaseLinkedIds
                     TransactionListItem(
                         tx = tx,
                         formatter = formatter,
-                        onEdit = { onNavigateToEdit(tx) },
-                        onDelete = { viewModel.requestDelete(tx) }
+                        fromExtract = fromExtract,
+                        fromTcPurchase = fromTcPurchase,
+                        onEdit = if (fromExtract || fromTcPurchase) null else ({ onNavigateToEdit(tx) }),
+                        onDelete = if (fromExtract) null else ({ viewModel.requestDelete(tx) })
                     )
                     HorizontalDivider()
                 }
@@ -91,6 +97,8 @@ fun AccountTransactionsScreen(
 internal fun TransactionListItem(
     tx: Transaction,
     formatter: DateTimeFormatter,
+    fromExtract: Boolean = false,
+    fromTcPurchase: Boolean = false,
     onEdit: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null
 ) {
@@ -108,7 +116,14 @@ internal fun TransactionListItem(
                 onLongClick = { if (onEdit != null || onDelete != null) menuExpanded = true }
             ),
             headlineContent = { Text(tx.description ?: "Sin descripción") },
-            supportingContent = { Text(tx.date.format(formatter)) },
+            supportingContent = {
+                val tag = when {
+                    fromExtract -> " · Extracto TC"
+                    fromTcPurchase -> " · Tarjeta de crédito"
+                    else -> ""
+                }
+                Text(tx.date.format(formatter) + tag)
+            },
             trailingContent = {
                 Text(
                     tx.amount.toCopString(),

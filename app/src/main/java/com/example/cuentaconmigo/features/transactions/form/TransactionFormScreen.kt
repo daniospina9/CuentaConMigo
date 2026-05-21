@@ -34,7 +34,12 @@ fun TransactionFormScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text(if (viewModel.isEditMode) "Editar transacción" else "Nueva transacción") })
+            TopAppBar(
+                title = { Text(if (viewModel.isEditMode) "Editar transacción" else "Nueva transacción") },
+                actions = {
+                    TextButton(onClick = onNavigateBack) { Text("Cancelar") }
+                }
+            )
         }
     ) { padding ->
         Column(

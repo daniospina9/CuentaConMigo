@@ -44,6 +44,9 @@ interface DestinationAccountDao {
     @Query("SELECT COUNT(*) FROM destination_accounts WHERE parentAccountId = :parentAccountId")
     suspend fun countSubAccounts(parentAccountId: Long): Int
 
+    @Query("SELECT * FROM destination_accounts WHERE userId = :userId AND name = :name LIMIT 1")
+    suspend fun getByName(userId: Long, name: String): DestinationAccountEntity?
+
     @Query("DELETE FROM destination_accounts WHERE id = :id")
     suspend fun deleteById(id: Long)
 

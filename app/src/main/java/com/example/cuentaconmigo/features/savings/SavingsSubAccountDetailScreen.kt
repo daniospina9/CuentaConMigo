@@ -44,10 +44,10 @@ fun SavingsSubAccountDetailScreen(
                 title = { Text(account?.name ?: "") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-                    }
-                }
-            )
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+        }
+}
+)
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showWithdrawDialog = true }) {

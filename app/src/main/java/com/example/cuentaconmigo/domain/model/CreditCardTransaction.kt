@@ -10,7 +10,8 @@ data class CreditCardTransaction(
     val date: Long,
     val destinationAccountId: Long?,
     val linkedTransactionId: Long?,
-    val installments: Int = 1
+    val installments: Int = 1,
+    val extractId: Long? = null
 )
 
 enum class CreditCardTransactionType { PURCHASE, PAYMENT, INTEREST, FEE }

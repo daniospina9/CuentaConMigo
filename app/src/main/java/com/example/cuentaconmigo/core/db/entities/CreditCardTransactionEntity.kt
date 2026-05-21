@@ -33,5 +33,6 @@ data class CreditCardTransactionEntity(
     val date: Long,                          // epoch millis
     val destinationAccountId: Long? = null,  // para PURCHASE
     val linkedTransactionId: Long? = null,   // para PAYMENT: ID del Transaction EXPENSE creado
-    val installments: Int = 1               // 1 = de contado, N = en cuotas
+    val installments: Int = 1,              // 1 = de contado, N = en cuotas
+    val extractId: Long? = null             // no nulo si fue auto-creada al registrar un extracto
 )
