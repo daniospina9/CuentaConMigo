@@ -15,6 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -24,19 +25,27 @@ import com.example.cuentaconmigo.core.util.parseToCentavos
 import com.example.cuentaconmigo.core.util.toCopString
 import com.example.cuentaconmigo.domain.model.CreditCard
 import com.example.cuentaconmigo.domain.model.MinPaymentType
+import com.example.cuentaconmigo.domain.model.SimpleDebt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DebtListScreen(
     onNavigateBack: () -> Unit,
     onNavigateToDetail: (creditCardId: Long) -> Unit,
+    onNavigateToSimpleDebt: (debtId: Long) -> Unit,
     viewModel: DebtListViewModel = hiltViewModel()
 ) {
     val cards by viewModel.cards.collectAsState()
     val debtsMap by viewModel.debtsMap.collectAsState()
+    val simpleDebts by viewModel.simpleDebts.collectAsState()
+    val simpleDebtsMap by viewModel.simpleDebtsMap.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
-    var showCreateDialog by remember { mutableStateOf(false) }
+
+    var fabExpanded by remember { mutableStateOf(false) }
+    var showCreateCardDialog by remember { mutableStateOf(false) }
+    var showCreateLoanDialog by remember { mutableStateOf(false) }
     var cardToDelete by remember { mutableStateOf<CreditCard?>(null) }
+    var loanToDelete by remember { mutableStateOf<SimpleDebt?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(errorMessage) {
@@ -58,8 +67,42 @@ fun DebtListScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showCreateDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Nueva tarjeta")
+            Column(horizontalAlignment = Alignment.End) {
+                if (fabExpanded) {
+                    SmallFloatingActionButton(
+                        onClick = {
+                            fabExpanded = false
+                            showCreateLoanDialog = true
+                        },
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                        Row(
+                            Modifier.padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text("Préstamo")
+                        }
+                    }
+                    SmallFloatingActionButton(
+                        onClick = {
+                            fabExpanded = false
+                            showCreateCardDialog = true
+                        },
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                        Row(
+                            Modifier.padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text("Tarjeta de crédito")
+                        }
+                    }
+                }
+                FloatingActionButton(onClick = { fabExpanded = !fabExpanded }) {
+                    Icon(Icons.Default.Add, contentDescription = "Nueva deuda")
+                }
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -68,14 +111,24 @@ fun DebtListScreen(
             Modifier
                 .fillMaxSize()
                 .padding(padding),
-            contentPadding = PaddingValues(bottom = 120.dp)
+            contentPadding = PaddingValues(bottom = 160.dp)
         ) {
+            // Sección Tarjetas de Crédito
+            item {
+                Text(
+                    "Tarjetas de crédito",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+
             if (cards.isEmpty()) {
                 item {
                     Box(
                         Modifier
                             .fillMaxWidth()
-                            .padding(32.dp),
+                            .padding(horizontal = 32.dp, vertical = 8.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -85,7 +138,7 @@ fun DebtListScreen(
                     }
                 }
             } else {
-                items(cards, key = { it.id }) { card ->
+                items(cards, key = { "card_${it.id}" }) { card ->
                     val debt = debtsMap[card.id] ?: 0L
                     val available = card.creditLimit - debt
                     CreditCardListItem(
@@ -98,19 +151,69 @@ fun DebtListScreen(
                     HorizontalDivider()
                 }
             }
+
+            // Sección Préstamos
+            item {
+                Text(
+                    "Préstamos",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+
+            if (simpleDebts.isEmpty()) {
+                item {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 32.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Sin préstamos registrados.",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            } else {
+                items(simpleDebts, key = { "loan_${it.id}" }) { loan ->
+                    val debt = simpleDebtsMap[loan.id] ?: 0L
+                    SimpleDebtListItem(
+                        debt = loan,
+                        currentDebt = debt,
+                        onClick = { onNavigateToSimpleDebt(loan.id) },
+                        onDelete = { loanToDelete = loan }
+                    )
+                    HorizontalDivider()
+                }
+            }
         }
     }
 
-    if (showCreateDialog) {
+    // Dialog crear TC
+    if (showCreateCardDialog) {
         CreateCreditCardDialog(
             onConfirm = { name, lastFour, limit, rate, cutOff, dueDay, minType, minPercent, minFixed, monthlyFee ->
                 viewModel.createCard(name, lastFour, limit, rate, cutOff, dueDay, minType, minPercent, minFixed, monthlyFee)
-                showCreateDialog = false
+                showCreateCardDialog = false
             },
-            onDismiss = { showCreateDialog = false }
+            onDismiss = { showCreateCardDialog = false }
         )
     }
 
+    // Dialog crear Préstamo
+    if (showCreateLoanDialog) {
+        CreateSimpleDebtDialog(
+            onConfirm = { name, description ->
+                viewModel.createSimpleDebt(name, description)
+                showCreateLoanDialog = false
+            },
+            onDismiss = { showCreateLoanDialog = false }
+        )
+    }
+
+    // Confirmar eliminar TC
     cardToDelete?.let { card ->
         AlertDialog(
             onDismissRequest = { cardToDelete = null },
@@ -130,6 +233,25 @@ fun DebtListScreen(
         )
     }
 
+    // Confirmar eliminar Préstamo
+    loanToDelete?.let { loan ->
+        AlertDialog(
+            onDismissRequest = { loanToDelete = null },
+            title = { Text("Eliminar préstamo") },
+            text = { Text("¿Eliminar \"${loan.name}\"? Esta acción no se puede deshacer.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteSimpleDebt(loan)
+                    loanToDelete = null
+                }) {
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { loanToDelete = null }) { Text("Cancelar") }
+            }
+        )
+    }
 }
 
 @Composable
@@ -159,6 +281,13 @@ private fun CreditCardListItem(
                 )
             }
         },
+        overlineContent = {
+            Text(
+                "TARJETA DE CRÉDITO",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.secondary
+            )
+        },
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
@@ -172,6 +301,92 @@ private fun CreditCardListItem(
                 )
             }
         }
+    )
+}
+
+@Composable
+private fun SimpleDebtListItem(
+    debt: SimpleDebt,
+    currentDebt: Long,
+    onClick: () -> Unit,
+    onDelete: () -> Unit
+) {
+    ListItem(
+        headlineContent = {
+            Text(debt.name, style = MaterialTheme.typography.bodyLarge)
+        },
+        supportingContent = {
+            Text(
+                "Deuda: ${currentDebt.toCopString()}",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (currentDebt > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        overlineContent = {
+            Text(
+                "PRÉSTAMO",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.tertiary
+            )
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 4.dp),
+        trailingContent = {
+            IconButton(onClick = onDelete) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Eliminar",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CreateSimpleDebtDialog(
+    onConfirm: (name: String, description: String?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Nuevo préstamo") },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Nombre del préstamo") },
+                    placeholder = { Text("Ej: Préstamo de Juan") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Descripción (opcional)") },
+                    singleLine = false,
+                    maxLines = 3,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(name.trim(), description.ifBlank { null }) },
+                enabled = name.isNotBlank()
+            ) { Text("Crear") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )
 }
 
@@ -209,7 +424,7 @@ private fun CreateCreditCardDialog(
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())
+                modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
                 OutlinedTextField(
                     value = name,
