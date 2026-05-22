@@ -82,7 +82,7 @@ interface TransactionDao {
         SELECT * FROM transactions
         WHERE destinationAccountId = :destinationAccountId
           AND date BETWEEN :startEpochDay AND :endEpochDay
-        ORDER BY date DESC
+        ORDER BY date DESC, id DESC
     """)
     fun getByDestinationAccount(
         destinationAccountId: Long,
@@ -156,10 +156,10 @@ interface TransactionDao {
     @Query("SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE destinationAccountId = :accountId AND type = 'EXPENSE'")
     fun getTotalExpensesForAccountFlow(accountId: Long): Flow<Long>
 
-    @Query("SELECT * FROM transactions WHERE destinationAccountId = :destinationAccountId ORDER BY date DESC")
+    @Query("SELECT * FROM transactions WHERE destinationAccountId = :destinationAccountId ORDER BY date DESC, id DESC")
     fun getByDestinationAccountAll(destinationAccountId: Long): Flow<List<TransactionEntity>>
 
-    @Query("SELECT * FROM transactions WHERE depositAccountId = :depositAccountId ORDER BY date DESC")
+    @Query("SELECT * FROM transactions WHERE depositAccountId = :depositAccountId ORDER BY date DESC, id DESC")
     fun getAllByDepositAccount(depositAccountId: Long): Flow<List<TransactionEntity>>
 
     @Query("SELECT COUNT(*) FROM transactions WHERE destinationAccountId = :accountId")
@@ -176,7 +176,7 @@ interface TransactionDao {
         INNER JOIN destination_accounts da ON da.id = t.destinationAccountId
         WHERE da.parentAccountId = :parentAccountId
           AND t.date BETWEEN :startEpochDay AND :endEpochDay
-        ORDER BY t.date DESC
+        ORDER BY t.date DESC, t.id DESC
     """)
     fun getByParentInvestmentAccount(
         parentAccountId: Long,
