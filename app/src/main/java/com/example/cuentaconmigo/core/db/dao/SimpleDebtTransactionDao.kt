@@ -38,4 +38,7 @@ interface SimpleDebtTransactionDao {
 
     @Query("SELECT linkedTransactionId FROM simple_debt_transactions WHERE debtId = :debtId AND linkedTransactionId IS NOT NULL")
     suspend fun getLinkedTransactionIds(debtId: Long): List<Long>
+
+    @Query("SELECT linkedTransactionId FROM simple_debt_transactions WHERE linkedTransactionId IS NOT NULL")
+    fun getAllLinkedTransactionIds(): Flow<List<Long>>
 }

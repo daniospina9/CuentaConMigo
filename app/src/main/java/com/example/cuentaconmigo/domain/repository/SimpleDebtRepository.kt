@@ -18,4 +18,5 @@ interface SimpleDebtRepository {
     suspend fun deleteTransaction(tx: SimpleDebtTransaction)
     suspend fun hasTransactions(debtId: Long): Boolean
     suspend fun getTransactionByLinkedId(linkedTransactionId: Long): SimpleDebtTransaction?
+    fun getAllLinkedTransactionIds(): Flow<Set<Long>>
 }

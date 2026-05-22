@@ -53,4 +53,7 @@ class SimpleDebtRepositoryImpl @Inject constructor(
 
     override suspend fun getTransactionByLinkedId(linkedTransactionId: Long): SimpleDebtTransaction? =
         txDao.getByLinkedTransactionId(linkedTransactionId)?.toDomain()
+
+    override fun getAllLinkedTransactionIds(): Flow<Set<Long>> =
+        txDao.getAllLinkedTransactionIds().map { it.toSet() }
 }

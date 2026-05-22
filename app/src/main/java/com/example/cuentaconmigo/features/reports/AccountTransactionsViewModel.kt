@@ -7,6 +7,7 @@ import com.example.cuentaconmigo.domain.model.AccountType
 import com.example.cuentaconmigo.domain.model.Transaction
 import com.example.cuentaconmigo.domain.repository.CreditCardRepository
 import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
+import com.example.cuentaconmigo.domain.repository.SimpleDebtRepository
 import com.example.cuentaconmigo.domain.repository.TransactionRepository
 import com.example.cuentaconmigo.domain.usecase.DeleteTransactionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,6 +20,7 @@ class AccountTransactionsViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
     private val destinationAccountRepository: DestinationAccountRepository,
     private val creditCardRepository: CreditCardRepository,
+    private val simpleDebtRepository: SimpleDebtRepository,
     private val deleteTransactionUseCase: DeleteTransactionUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -46,6 +48,9 @@ class AccountTransactionsViewModel @Inject constructor(
     val tcPurchaseLinkedIds: StateFlow<Set<Long>> = flow {
         emit(creditCardRepository.getTcPurchaseLinkedTransactionIds())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
+    val simpleDebtLinkedIds: StateFlow<Set<Long>> = simpleDebtRepository.getAllLinkedTransactionIds()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
     private var pendingDelete: Transaction? = null
 
