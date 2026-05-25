@@ -4,10 +4,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Savings
-import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -31,7 +31,9 @@ fun MainScreen(userId: Long, navController: NavController) {
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text(selectedTab.label) })
+            if (selectedTab != HomeTab.HOME) {
+                TopAppBar(title = { Text(selectedTab.label) })
+            }
         },
         bottomBar = {
             NavigationBar {
@@ -43,7 +45,7 @@ fun MainScreen(userId: Long, navController: NavController) {
                             when (tab) {
                                 HomeTab.HOME -> Icon(Icons.Default.Home, contentDescription = tab.label)
                                 HomeTab.SAVINGS -> Icon(Icons.Default.Savings, contentDescription = tab.label)
-                                HomeTab.INVESTMENTS -> Icon(Icons.Default.TrendingUp, contentDescription = tab.label)
+                                HomeTab.INVESTMENTS -> Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = tab.label)
                                 HomeTab.REPORTS -> Icon(Icons.Default.BarChart, contentDescription = tab.label)
                             }
                         },
