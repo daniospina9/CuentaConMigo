@@ -25,11 +25,11 @@ val NotchedBarFabOverhang = 28.dp
 
 private val FabSize      = 56.dp
 private val BarHeight    = 80.dp
-private val NotchGap     = 8.dp
+private val NotchGap     = 10.dp
 private val SideMargin   = 12.dp
 private val BottomMargin = 10.dp
 private val CornerRadius   = 36.dp   // esquinas muy redondeadas, casi píldora
-private val NotchReach     = 20.dp   // alcance lateral de la curva de entrada/salida del hueco
+private val NotchReach     = 20.dp   // radio del hombro (cuarto de círculo de entrada/salida)
 
 @Composable
 fun NotchedBottomBar(
@@ -63,7 +63,7 @@ fun NotchedBottomBar(
             val cr = CornerRadius.toPx()                // radio de las esquinas
             val rs = NotchReach.toPx()                  // alcance lateral de la curva de entrada/salida
             val k  = 0.5523f                            // constante bezier para círculo (90°)
-            val k2 = 1.1f                               // controla apertura del fondo: mayor = más circular
+            val k2 = 1.06f                               // controla apertura del fondo: mayor = más circular
             val w  = size.width
             val h  = size.height
             val cx = w / 2f
@@ -80,8 +80,8 @@ fun NotchedBottomBar(
 
                 // ── Hueco: dos cúbicas continuas, sin junta visible ───────
                 // k2 en P2/P1 preserva la curvatura circular en el fondo del hueco
-                cubicTo(cx - r, 0f,   cx - r * k2, r,   cx, r)
-                cubicTo(cx + r * k2, r,   cx + r, 0f,   cx + r + rs, 0f)
+                cubicTo(cx - r + 25, 0f,   cx - r * k2, r,   cx, r)
+                cubicTo(cx + r * k2, r,   cx + r - 25, 0f,   cx + r + rs, 0f)
 
                 // ── Borde superior derecho ────────────────────────────────
                 lineTo(w - cr, 0f)
