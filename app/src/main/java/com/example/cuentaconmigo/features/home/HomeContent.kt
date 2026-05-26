@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,7 +21,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -28,6 +28,21 @@ import com.example.cuentaconmigo.core.util.toCopString
 import com.example.cuentaconmigo.features.main.Routes
 import com.example.cuentaconmigo.ui.theme.Green10
 import com.example.cuentaconmigo.ui.theme.Green40
+
+// Colores para avatares de cuentas — determinísticos por ID
+private val avatarPalette = listOf(
+    Color(0xFF1E88E5),
+    Color(0xFF8E24AA),
+    Color(0xFFE53935),
+    Color(0xFF43A047),
+    Color(0xFFFF8F00),
+    Color(0xFF00ACC1),
+    Color(0xFFE91E63),
+    Color(0xFF6D4C41),
+)
+
+private fun avatarColor(accountId: Long): Color =
+    avatarPalette[(accountId % avatarPalette.size).toInt()]
 
 @Composable
 fun HomeContent(
@@ -38,96 +53,175 @@ fun HomeContent(
     val userName by viewModel.userName.collectAsState()
     val accounts by viewModel.accountsWithBalances.collectAsState()
     val totalBalance by viewModel.totalBalance.collectAsState()
+    val selectedPeriod by viewModel.selectedPeriod.collectAsState()
+    val income by viewModel.income.collectAsState()
+    val expenses by viewModel.expenses.collectAsState()
 
     Column(
-        Modifier
+        modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        // Saludo
-        if (userName.isNotBlank()) {
-            Text(
-                "Hola, $userName",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        // ── Saludo ──────────────────────────────────────────────────────────
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 20.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = if (userName.isNotBlank()) "Hola, $userName 👋" else "Hola 👋",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    text = "Todo en orden, sigue por buen camino",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Notifications,
+                    contentDescription = "Notificaciones",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
 
-        // Balance total
-        val balanceGradient = Brush.linearGradient(
+        // ── Banner verde ─────────────────────────────────────────────────────
+        val bannerGradient = Brush.linearGradient(
             colors = listOf(Green10, Green40),
             start = Offset(0f, 0f),
             end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
         )
         Box(
             modifier = Modifier
+                .padding(horizontal = 20.dp)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(28.dp))
-                .background(balanceGradient)
+                .background(bannerGradient)
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(horizontal = 24.dp, vertical = 24.dp)
-                    .fillMaxWidth()
-            ) {
+            Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 22.dp)) {
+                // Label + dropdown
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Balance total",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White.copy(alpha = 0.75f)
+                    )
+                    PeriodDropdown(
+                        selected = selectedPeriod,
+                        onSelect = { viewModel.setPeriod(it) }
+                    )
+                }
+
+                Spacer(Modifier.height(4.dp))
+
+                // Monto total
                 Text(
-                    "Balance total",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Color.White.copy(alpha = 0.7f)
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    totalBalance.toCopString(),
-                    style = MaterialTheme.typography.displaySmall,
+                    text = totalBalance.toCopString(),
+                    style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
+
+                Spacer(Modifier.height(16.dp))
+
+                // Divider
+                HorizontalDivider(color = Color.White.copy(alpha = 0.2f))
+
+                Spacer(Modifier.height(14.dp))
+
+                // Ingresos | Gastos
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Ingresos",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = income.toCopString(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        )
+                    }
+                    VerticalDivider(
+                        modifier = Modifier.height(36.dp),
+                        color = Color.White.copy(alpha = 0.2f)
+                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Gastos",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = expenses.toCopString(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        )
+                    }
+                }
             }
         }
 
-        // Acciones rápidas
-        SectionLabel("Acciones rápidas")
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            QuickActionCard(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Default.Mic,
-                label = "Por voz",
-                onClick = { navController.navigate(Routes.voiceInput(userId)) }
-            )
-            QuickActionCard(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Default.AddCircle,
-                label = "Manual",
-                onClick = { navController.navigate(Routes.transactionForm(userId, "EXPENSE")) }
-            )
-        }
+        Spacer(Modifier.height(20.dp))
 
-        // Cuentas de depósito
-        SectionLabel("Cuentas de depósito")
+        // ── Card IA ───────────────────────────────────────────────────────────
+        AiRegistrationCard(
+            modifier = Modifier.padding(horizontal = 20.dp),
+            onMicClick = { navController.navigate(Routes.voiceInput(userId)) }
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        // ── Cuentas de depósito ───────────────────────────────────────────────
+        SectionLabel(
+            text = "Cuentas de depósito",
+            modifier = Modifier.padding(horizontal = 20.dp)
+        )
+        Spacer(Modifier.height(10.dp))
+
         if (accounts.isEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Text(
-                    "Sin cuentas de depósito. Crea una en Gestionar.",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Text(
+                text = "Sin cuentas de depósito. Crea una en Gestionar.",
+                modifier = Modifier.padding(horizontal = 20.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                modifier = Modifier.padding(horizontal = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 accounts.forEach { (account, balance) ->
-                    DepositAccountCard(
+                    DepositAccountRow(
                         name = account.name,
+                        accountId = account.id,
                         balance = balance,
                         onClick = {
                             navController.navigate(
@@ -139,12 +233,22 @@ fun HomeContent(
             }
         }
 
-        // Gestionar
-        SectionLabel("Gestionar")
+        Spacer(Modifier.height(24.dp))
+
+        // ── Gestionar ─────────────────────────────────────────────────────────
+        SectionLabel(
+            text = "Gestionar",
+            modifier = Modifier.padding(horizontal = 20.dp)
+        )
+        Spacer(Modifier.height(10.dp))
+
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .padding(horizontal = 20.dp)
+                .fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            shape = MaterialTheme.shapes.large
+            shape = RoundedCornerShape(20.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
             ManageNavRow(
                 icon = Icons.Default.AccountBalance,
@@ -165,64 +269,161 @@ fun HomeContent(
             )
         }
 
-        Spacer(Modifier.height(80.dp))
+        Spacer(Modifier.height(100.dp))
+    }
+}
+
+// ── Componentes privados ──────────────────────────────────────────────────────
+
+@Composable
+private fun AiRegistrationCard(
+    modifier: Modifier = Modifier,
+    onMicClick: () -> Unit
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Contenido izquierdo
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = "Registro inteligente con IA",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = "Habla y deja que la IA registre y clasifique tus movimientos por ti.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Mic,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(14.dp).padding(top = 1.dp)
+                    )
+                    Text(
+                        text = "Ejemplo: \"24 ml en almuerzo y 10 ml en transporte\"",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontStyle = FontStyle.Italic,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Botón micrófono
+            FloatingActionButton(
+                onClick = onMicClick,
+                modifier = Modifier.size(56.dp),
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = CircleShape,
+                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Mic,
+                    contentDescription = "Registrar por voz",
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+        }
     }
 }
 
 @Composable
-private fun SectionLabel(text: String) {
+private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     Text(
-        text,
-        style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier
     )
 }
 
 @Composable
-private fun QuickActionCard(
-    modifier: Modifier = Modifier,
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit
-) {
-    ElevatedCard(
-        onClick = onClick,
-        modifier = modifier,
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
-        shape = MaterialTheme.shapes.large
-    ) {
-        Column(
+private fun PeriodDropdown(selected: HomePeriod, onSelect: (HomePeriod) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        Row(
             modifier = Modifier
-                .padding(vertical = 20.dp)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(Color.White.copy(alpha = 0.15f))
+                .clickable { expanded = true }
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            IconContainer(icon = icon, size = 52.dp, iconSize = 26.dp)
             Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge
+                text = if (selected == HomePeriod.MONTH) "Este mes" else "Anual",
+                style = MaterialTheme.typography.labelMedium,
+                color = Color.White
+            )
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            DropdownMenuItem(
+                text = { Text("Este mes") },
+                onClick = { onSelect(HomePeriod.MONTH); expanded = false }
+            )
+            DropdownMenuItem(
+                text = { Text("Anual") },
+                onClick = { onSelect(HomePeriod.YEAR); expanded = false }
             )
         }
     }
 }
 
 @Composable
-private fun DepositAccountCard(
+private fun DepositAccountRow(
     name: String,
+    accountId: Long,
     balance: Long,
     onClick: () -> Unit
 ) {
     val balanceColor = if (balance >= 0)
-        MaterialTheme.colorScheme.primary
+        MaterialTheme.colorScheme.onSurface
     else
         MaterialTheme.colorScheme.error
 
     ElevatedCard(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp),
-        shape = MaterialTheme.shapes.medium
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
     ) {
         Row(
             modifier = Modifier
@@ -232,18 +433,40 @@ private fun DepositAccountCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconContainer(icon = Icons.Default.AccountBalance, size = 38.dp, iconSize = 18.dp)
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                // Avatar circular con inicial
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(avatarColor(accountId)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = name.firstOrNull()?.uppercase() ?: "?",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+                Column {
+                    Text(
+                        text = name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "Cuenta de depósito",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
             Row(
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
                     text = balance.toCopString(),
@@ -263,29 +486,6 @@ private fun DepositAccountCard(
 }
 
 @Composable
-private fun IconContainer(
-    icon: ImageVector,
-    size: Dp = 44.dp,
-    iconSize: Dp = 22.dp,
-    shape: androidx.compose.ui.graphics.Shape = CircleShape
-) {
-    Box(
-        modifier = Modifier
-            .size(size)
-            .clip(shape)
-            .background(MaterialTheme.colorScheme.primaryContainer),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier.size(iconSize)
-        )
-    }
-}
-
-@Composable
 private fun ManageNavRow(
     icon: ImageVector,
     label: String,
@@ -300,13 +500,27 @@ private fun ManageNavRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconContainer(icon = icon, size = 40.dp, iconSize = 20.dp, shape = RoundedCornerShape(12.dp))
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
             )
         }
         Icon(
