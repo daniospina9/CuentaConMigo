@@ -414,39 +414,37 @@ private fun DepositAccountRow(
     balance: Long,
     onClick: () -> Unit
 ) {
-    val balanceColor = if (balance >= 0)
-        MaterialTheme.colorScheme.onSurface
-    else
-        MaterialTheme.colorScheme.error
+    val balanceColor = if (balance >= 0) Green40 else MaterialTheme.colorScheme.error
 
     ElevatedCard(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = Color.White),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .padding(horizontal = 14.dp, vertical = 10.dp)
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Avatar circular con inicial
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(36.dp)
                         .clip(CircleShape)
                         .background(avatarColor(accountId)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = name.firstOrNull()?.uppercase() ?: "?",
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
@@ -454,12 +452,12 @@ private fun DepositAccountRow(
                 Column {
                     Text(
                         text = name,
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
                         text = "Cuenta de depósito",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -470,7 +468,7 @@ private fun DepositAccountRow(
             ) {
                 Text(
                     text = balance.toCopString(),
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = balanceColor
                 )
@@ -478,7 +476,7 @@ private fun DepositAccountRow(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }

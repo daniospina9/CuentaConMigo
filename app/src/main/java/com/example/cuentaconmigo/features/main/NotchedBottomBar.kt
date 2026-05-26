@@ -41,7 +41,7 @@ fun NotchedBottomBar(
     val sysNavBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     // Altura total medida por el Scaffold (incluye margen inferior + sys nav)
     val totalHeight   = BarHeight + fabOverhang + sysNavBottom + BottomMargin
-    val barColor      = MaterialTheme.colorScheme.surface
+    val barColor      = Color.White
 
     // El Box externo ocupa la pantalla completa en ancho para centrar bien el FAB,
     // pero el contenido visual (barra + ítems) tiene márgenes horizontales.
