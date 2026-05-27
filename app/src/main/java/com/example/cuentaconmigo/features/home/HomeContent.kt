@@ -10,6 +10,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -58,6 +60,8 @@ fun HomeContent(
     val selectedPeriod by viewModel.selectedPeriod.collectAsState()
     val income by viewModel.income.collectAsState()
     val expenses by viewModel.expenses.collectAsState()
+
+    var balanceVisible by remember { mutableStateOf(true) }
 
     Column(
         modifier = Modifier
@@ -122,11 +126,27 @@ fun HomeContent(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Balance total",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = Color.White.copy(alpha = 0.75f)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "Balance total",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = Color.White.copy(alpha = 0.75f)
+                        )
+                        Icon(
+                            imageVector = if (balanceVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
+                            contentDescription = if (balanceVisible) "Ocultar balance" else "Mostrar balance",
+                            tint = Color.White.copy(alpha = 0.6f),
+                            modifier = Modifier
+                                .size(16.dp)
+                                .clickable(
+                                    indication = null,
+                                    interactionSource = remember { MutableInteractionSource() }
+                                ) { balanceVisible = !balanceVisible }
+                        )
+                    }
                     PeriodDropdown(
                         selected = selectedPeriod,
                         onSelect = { viewModel.setPeriod(it) }
@@ -137,7 +157,7 @@ fun HomeContent(
 
                 // Monto total
                 Text(
-                    text = totalBalance.toCopString(),
+                    text = if (balanceVisible) totalBalance.toCopString() else "••••••",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -163,7 +183,7 @@ fun HomeContent(
                         )
                         Spacer(Modifier.height(2.dp))
                         Text(
-                            text = income.toCopString(),
+                            text = if (balanceVisible) income.toCopString() else "••••••",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White
@@ -181,7 +201,7 @@ fun HomeContent(
                         )
                         Spacer(Modifier.height(2.dp))
                         Text(
-                            text = expenses.toCopString(),
+                            text = if (balanceVisible) expenses.toCopString() else "••••••",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White
@@ -400,8 +420,8 @@ private fun PeriodDropdown(selected: HomePeriod, onSelect: (HomePeriod) -> Unit)
     Box {
         Row(
             modifier = Modifier
-                .clip(RoundedCornerShape(20.dp))
-                .background(Color.White.copy(alpha = 0.15f))
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color(0xFF023505).copy(alpha = 0.3f))
                 .clickable { expanded = true }
                 .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
