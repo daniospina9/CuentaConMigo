@@ -134,4 +134,10 @@ class TransactionRepositoryImpl @Inject constructor(
 
     override suspend fun deleteAllByAccountOrParentId(accountId: Long) =
         dao.deleteAllByAccountOrParentId(accountId)
+
+    override fun getUserIncome(userId: Long, startDay: Long, endDay: Long): Flow<Long> =
+        dao.getUserIncome(userId, startDay, endDay)
+
+    override fun getUserExpenses(userId: Long, startDay: Long, endDay: Long): Flow<Long> =
+        dao.getUserExpenses(userId, startDay, endDay)
 }

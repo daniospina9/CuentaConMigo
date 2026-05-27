@@ -8,6 +8,7 @@ import com.example.cuentaconmigo.domain.repository.AssetOperationRepository
 import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
 import com.example.cuentaconmigo.domain.repository.InvestmentFluctuationRepository
 import com.example.cuentaconmigo.domain.repository.SavingsMovementRepository
+import com.example.cuentaconmigo.domain.repository.SimpleDebtRepository
 import com.example.cuentaconmigo.domain.repository.TransactionRepository
 import com.example.cuentaconmigo.domain.usecase.DeleteTransactionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,7 +19,8 @@ import javax.inject.Inject
 data class DepositTransactionItem(
     val transaction: Transaction,
     val destinationName: String?,
-    val isTransfer: Boolean
+    val isTransfer: Boolean,
+    val isLinkedToSimpleDebt: Boolean
 )
 
 @HiltViewModel
@@ -28,6 +30,7 @@ class DepositAccountTransactionsViewModel @Inject constructor(
     private val investmentFluctuationRepository: InvestmentFluctuationRepository,
     private val assetOperationRepository: AssetOperationRepository,
     private val savingsMovementRepository: SavingsMovementRepository,
+    private val simpleDebtRepository: SimpleDebtRepository,
     private val deleteTransactionUseCase: DeleteTransactionUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -37,14 +40,16 @@ class DepositAccountTransactionsViewModel @Inject constructor(
 
     val items: StateFlow<List<DepositTransactionItem>> = combine(
         transactionRepository.getAllByDepositAccount(depositAccountId),
-        destinationAccountRepository.getByUser(userId)
-    ) { transactions, accounts ->
+        destinationAccountRepository.getByUser(userId),
+        simpleDebtRepository.getAllLinkedTransactionIds()
+    ) { transactions, accounts, simpleDebtLinkedIds ->
         val nameById = accounts.associateBy({ it.id }, { it.name })
         transactions.map { tx ->
             DepositTransactionItem(
                 transaction = tx,
                 destinationName = tx.destinationAccountId?.let { nameById[it] },
-                isTransfer = tx.transferGroupId != null
+                isTransfer = tx.transferGroupId != null,
+                isLinkedToSimpleDebt = tx.id in simpleDebtLinkedIds
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())

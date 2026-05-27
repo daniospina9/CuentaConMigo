@@ -1,54 +1,78 @@
 package com.example.cuentaconmigo.ui.theme
 
-import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
-
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
+import androidx.compose.ui.graphics.Color
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
+    primary = Green40,
     onPrimary = Color.White,
+    primaryContainer = Green90,
+    onPrimaryContainer = Green10,
+    secondary = GreenGray40,
     onSecondary = Color.White,
+    secondaryContainer = GreenGray90,
+    onSecondaryContainer = GreenGray10,
+    tertiary = Teal40,
     onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    tertiaryContainer = Teal90,
+    onTertiaryContainer = Teal10,
+    error = Color(0xFFBA1A1A),
+    onError = Color.White,
+    errorContainer = Red90,
+    onErrorContainer = Red10,
+    background = Gray99,
+    onBackground = Gray10,
+    surface = Gray99,
+    onSurface = Gray10,
+    surfaceVariant = GrayVariant90,
+    onSurfaceVariant = GrayVariant30,
+    outline = GrayVariant50,
+    outlineVariant = GrayVariant80,
+    inverseSurface = Gray20,
+    inverseOnSurface = Gray95,
+    inversePrimary = Green80,
+)
+
+private val DarkColorScheme = darkColorScheme(
+    primary = Green80,
+    onPrimary = Green20,
+    primaryContainer = Green30,
+    onPrimaryContainer = Green90,
+    secondary = GreenGray80,
+    onSecondary = GreenGray20,
+    secondaryContainer = GreenGray30,
+    onSecondaryContainer = GreenGray90,
+    tertiary = Teal80,
+    onTertiary = Teal20,
+    tertiaryContainer = Teal30,
+    onTertiaryContainer = Teal90,
+    error = Red80,
+    onError = Red20,
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Red90,
+    background = Gray10,
+    onBackground = Gray90,
+    surface = Gray10,
+    onSurface = Gray90,
+    surfaceVariant = GrayVariant30,
+    onSurfaceVariant = GrayVariant80,
+    outline = GrayVariant60,
+    outlineVariant = GrayVariant30,
+    inverseSurface = Gray90,
+    inverseOnSurface = Gray20,
+    inversePrimary = Green40,
 )
 
 @Composable
 fun CuentaConMigoTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,

@@ -15,6 +15,8 @@ import com.example.cuentaconmigo.core.db.dao.DepositAccountDao
 import com.example.cuentaconmigo.core.db.dao.DestinationAccountDao
 import com.example.cuentaconmigo.core.db.dao.InvestmentFluctuationDao
 import com.example.cuentaconmigo.core.db.dao.SavingsMovementDao
+import com.example.cuentaconmigo.core.db.dao.SimpleDebtDao
+import com.example.cuentaconmigo.core.db.dao.SimpleDebtTransactionDao
 import com.example.cuentaconmigo.core.db.dao.TransactionDao
 import com.example.cuentaconmigo.core.db.dao.UserDao
 import com.example.cuentaconmigo.core.db.entities.AssetLiabilityEntity
@@ -26,6 +28,8 @@ import com.example.cuentaconmigo.core.db.entities.DepositAccountEntity
 import com.example.cuentaconmigo.core.db.entities.DestinationAccountEntity
 import com.example.cuentaconmigo.core.db.entities.InvestmentFluctuationEntity
 import com.example.cuentaconmigo.core.db.entities.SavingsMovementEntity
+import com.example.cuentaconmigo.core.db.entities.SimpleDebtEntity
+import com.example.cuentaconmigo.core.db.entities.SimpleDebtTransactionEntity
 import com.example.cuentaconmigo.core.db.entities.TransactionEntity
 import com.example.cuentaconmigo.core.db.entities.UserEntity
 
@@ -41,9 +45,11 @@ import com.example.cuentaconmigo.core.db.entities.UserEntity
         SavingsMovementEntity::class,
         CreditCardEntity::class,
         CreditCardTransactionEntity::class,
-        CreditCardExtractEntity::class
+        CreditCardExtractEntity::class,
+        SimpleDebtEntity::class,
+        SimpleDebtTransactionEntity::class
     ],
-    version = 15,
+    version = 16,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -59,6 +65,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun creditCardDao(): CreditCardDao
     abstract fun creditCardTransactionDao(): CreditCardTransactionDao
     abstract fun creditCardExtractDao(): CreditCardExtractDao
+    abstract fun simpleDebtDao(): SimpleDebtDao
+    abstract fun simpleDebtTransactionDao(): SimpleDebtTransactionDao
 
     companion object {
         val MIGRATION_2_3 = object : Migration(2, 3) {
@@ -285,6 +293,40 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE credit_card_extracts ADD COLUMN cutOffDate INTEGER NOT NULL DEFAULT 0")
                 database.execSQL("ALTER TABLE credit_card_transactions ADD COLUMN extractId INTEGER")
+            }
+        }
+
+        val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS simple_debts (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        userId INTEGER NOT NULL,
+                        name TEXT NOT NULL,
+                        description TEXT,
+                        createdAt INTEGER NOT NULL,
+                        isActive INTEGER NOT NULL DEFAULT 1,
+                        FOREIGN KEY(userId) REFERENCES users(id) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_simple_debts_userId ON simple_debts(userId)")
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS simple_debt_transactions (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        debtId INTEGER NOT NULL,
+                        userId INTEGER NOT NULL,
+                        type TEXT NOT NULL,
+                        amount INTEGER NOT NULL,
+                        description TEXT,
+                        date INTEGER NOT NULL,
+                        depositAccountId INTEGER,
+                        linkedTransactionId INTEGER,
+                        FOREIGN KEY(debtId) REFERENCES simple_debts(id) ON DELETE CASCADE,
+                        FOREIGN KEY(userId) REFERENCES users(id) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_simple_debt_transactions_debtId ON simple_debt_transactions(debtId)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_simple_debt_transactions_userId ON simple_debt_transactions(userId)")
             }
         }
 

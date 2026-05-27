@@ -10,6 +10,7 @@ import androidx.navigation.navArgument
 import com.example.cuentaconmigo.features.accounts.deposit.DepositAccountListScreen
 import com.example.cuentaconmigo.features.debts.CreditCardDetailScreen
 import com.example.cuentaconmigo.features.debts.DebtListScreen
+import com.example.cuentaconmigo.features.debts.SimpleDebtDetailScreen
 import com.example.cuentaconmigo.features.accounts.destination.DestinationAccountListScreen
 import com.example.cuentaconmigo.features.home.DepositAccountTransactionsScreen
 import com.example.cuentaconmigo.features.investments.AssetSubAccountDetailScreen
@@ -44,6 +45,7 @@ object Routes {
         "deposit_account_transactions/{userId}/{depositAccountId}?accountName={accountName}"
     const val DEBT_LIST = "debt_list/{userId}"
     const val CREDIT_CARD_DETAIL = "credit_card_detail/{userId}/{creditCardId}"
+    const val SIMPLE_DEBT_DETAIL = "simple_debt_detail/{userId}/{debtId}"
 
     fun home(userId: Long) = "home/$userId"
     fun depositAccounts(userId: Long) = "deposit_accounts/$userId"
@@ -65,6 +67,7 @@ object Routes {
         "deposit_account_transactions/$userId/$depositAccountId?accountName=${Uri.encode(accountName)}"
     fun debtList(userId: Long) = "debt_list/$userId"
     fun creditCardDetail(userId: Long, creditCardId: Long) = "credit_card_detail/$userId/$creditCardId"
+    fun simpleDebtDetail(userId: Long, debtId: Long) = "simple_debt_detail/$userId/$debtId"
 }
 
 @Composable
@@ -261,6 +264,9 @@ fun AppNavGraph() {
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToDetail = { creditCardId ->
                     navController.navigate(Routes.creditCardDetail(userId, creditCardId))
+                },
+                onNavigateToSimpleDebt = { debtId ->
+                    navController.navigate(Routes.simpleDebtDetail(userId, debtId))
                 }
             )
         }
@@ -273,6 +279,16 @@ fun AppNavGraph() {
             )
         ) {
             CreditCardDetailScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable(
+            route = Routes.SIMPLE_DEBT_DETAIL,
+            arguments = listOf(
+                navArgument("userId") { type = NavType.LongType },
+                navArgument("debtId") { type = NavType.LongType }
+            )
+        ) {
+            SimpleDebtDetailScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }

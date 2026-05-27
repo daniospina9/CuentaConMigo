@@ -12,6 +12,8 @@ import com.example.cuentaconmigo.core.db.dao.DepositAccountDao
 import com.example.cuentaconmigo.core.db.dao.DestinationAccountDao
 import com.example.cuentaconmigo.core.db.dao.InvestmentFluctuationDao
 import com.example.cuentaconmigo.core.db.dao.SavingsMovementDao
+import com.example.cuentaconmigo.core.db.dao.SimpleDebtDao
+import com.example.cuentaconmigo.core.db.dao.SimpleDebtTransactionDao
 import com.example.cuentaconmigo.core.db.dao.TransactionDao
 import com.example.cuentaconmigo.core.db.dao.UserDao
 import dagger.Module
@@ -42,7 +44,8 @@ object DatabaseModule {
                 AppDatabase.MIGRATION_11_12,
                 AppDatabase.MIGRATION_12_13,
                 AppDatabase.MIGRATION_13_14,
-                AppDatabase.MIGRATION_14_15
+                AppDatabase.MIGRATION_14_15,
+                AppDatabase.MIGRATION_15_16
             )
             .build()
 
@@ -78,4 +81,10 @@ object DatabaseModule {
 
     @Provides
     fun provideCreditCardExtractDao(db: AppDatabase): CreditCardExtractDao = db.creditCardExtractDao()
+
+    @Provides
+    fun provideSimpleDebtDao(db: AppDatabase): SimpleDebtDao = db.simpleDebtDao()
+
+    @Provides
+    fun provideSimpleDebtTransactionDao(db: AppDatabase): SimpleDebtTransactionDao = db.simpleDebtTransactionDao()
 }

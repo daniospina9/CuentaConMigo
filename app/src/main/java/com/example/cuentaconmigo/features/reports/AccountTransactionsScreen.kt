@@ -31,6 +31,7 @@ fun AccountTransactionsScreen(
     val showDeleteConfirm by viewModel.showDeleteConfirm.collectAsState()
     val extractProtectedIds by viewModel.extractProtectedIds.collectAsState()
     val tcPurchaseLinkedIds by viewModel.tcPurchaseLinkedIds.collectAsState()
+    val simpleDebtLinkedIds by viewModel.simpleDebtLinkedIds.collectAsState()
     val formatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("es", "CO")) }
 
     if (showDeleteConfirm) {
@@ -77,12 +78,14 @@ fun AccountTransactionsScreen(
                 items(transactions, key = { it.id }) { tx ->
                     val fromExtract = tx.id in extractProtectedIds
                     val fromTcPurchase = tx.id in tcPurchaseLinkedIds
+                    val fromSimpleDebt = tx.id in simpleDebtLinkedIds
                     TransactionListItem(
                         tx = tx,
                         formatter = formatter,
                         fromExtract = fromExtract,
                         fromTcPurchase = fromTcPurchase,
-                        onEdit = if (fromExtract || fromTcPurchase) null else ({ onNavigateToEdit(tx) }),
+                        fromSimpleDebt = fromSimpleDebt,
+                        onEdit = if (fromExtract || fromTcPurchase || fromSimpleDebt) null else ({ onNavigateToEdit(tx) }),
                         onDelete = if (fromExtract) null else ({ viewModel.requestDelete(tx) })
                     )
                     HorizontalDivider()
@@ -99,6 +102,7 @@ internal fun TransactionListItem(
     formatter: DateTimeFormatter,
     fromExtract: Boolean = false,
     fromTcPurchase: Boolean = false,
+    fromSimpleDebt: Boolean = false,
     onEdit: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null
 ) {
@@ -120,6 +124,7 @@ internal fun TransactionListItem(
                 val tag = when {
                     fromExtract -> " · Extracto TC"
                     fromTcPurchase -> " · Tarjeta de crédito"
+                    fromSimpleDebt -> " · Préstamo"
                     else -> ""
                 }
                 Text(tx.date.format(formatter) + tag)

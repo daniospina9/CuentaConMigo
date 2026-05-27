@@ -50,4 +50,6 @@ interface TransactionRepository {
     suspend fun hasTransactions(accountId: Long): Boolean
     suspend fun deleteAllByDestinationAccount(accountId: Long)
     suspend fun deleteAllByAccountOrParentId(accountId: Long)
+    fun getUserIncome(userId: Long, startDay: Long, endDay: Long): Flow<Long>
+    fun getUserExpenses(userId: Long, startDay: Long, endDay: Long): Flow<Long>
 }

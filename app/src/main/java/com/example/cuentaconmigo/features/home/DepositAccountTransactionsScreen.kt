@@ -76,7 +76,7 @@ fun DepositAccountTransactionsScreen(
                     DepositTransactionListItem(
                         item = item,
                         formatter = formatter,
-                        onEdit = if (!item.isTransfer) ({ onNavigateToEdit(item.transaction) }) else null,
+                        onEdit = if (!item.isTransfer && !item.isLinkedToSimpleDebt) ({ onNavigateToEdit(item.transaction) }) else null,
                         onDelete = { viewModel.requestDelete(item) }
                     )
                     HorizontalDivider()
