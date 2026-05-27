@@ -16,6 +16,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -337,18 +339,37 @@ private fun AiRegistrationCard(
             }
 
             // Botón micrófono
-            FloatingActionButton(
-                onClick = onMicClick,
-                modifier = Modifier.size(56.dp),
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = CircleShape,
-                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp)
+            Box(
+                modifier = Modifier
+                    .size(70.dp)
+                    .shadow(elevation = 4.dp, shape = CircleShape)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.radialGradient(
+                            colorStops = arrayOf(
+                                0.0f  to Color(0xFF158B28),
+                                0.70f to Color(0xFF158B28),
+                                0.74f to Color(0xFF178E29),
+                                0.79f to Color(0xFF1C962B),
+                                0.84f to Color(0xFF23A22E),
+                                0.89f to Color(0xFF2DB231),
+                                0.94f to Color(0xFF3AC535),
+                                1.0f  to Color(0xFF49E53C)
+                            )
+                        )
+                    )
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication        = ripple(color = Color.White),
+                        onClick           = onMicClick
+                    ),
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Mic,
+                    imageVector        = Icons.Default.Mic,
                     contentDescription = "Registrar por voz",
-                    modifier = Modifier.size(26.dp)
+                    tint               = Color.White,
+                    modifier           = Modifier.size(44.dp)
                 )
             }
         }
