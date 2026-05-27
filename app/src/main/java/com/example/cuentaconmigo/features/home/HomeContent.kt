@@ -102,15 +102,15 @@ fun HomeContent(
 
         // ── Banner verde ─────────────────────────────────────────────────────
         val bannerGradient = Brush.linearGradient(
-            colors = listOf(Green10, Green40),
+            colors = listOf(Color(0xFF023505), Color(0xFF127E29)),
             start = Offset(0f, 0f),
-            end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+            end = Offset(Float.POSITIVE_INFINITY, 0f)
         )
         Box(
             modifier = Modifier
                 .padding(horizontal = 20.dp)
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(28.dp))
+                .clip(RoundedCornerShape(20.dp))
                 .background(bannerGradient)
         ) {
             Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 22.dp)) {
