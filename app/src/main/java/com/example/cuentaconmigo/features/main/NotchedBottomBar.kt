@@ -23,6 +23,9 @@ import androidx.compose.ui.unit.dp
 // Cuánto sobresale el FAB sobre la barra — usado en MainScreen para ajustar padding
 val NotchedBarFabOverhang = 28.dp
 
+// Padding inferior que el contenido necesita para no quedar tapado por la barra
+val NotchedBarContentPadding = 90.dp   // BarHeight(80) + BottomMargin(10)
+
 private val FabSize      = 56.dp
 private val BarHeight    = 80.dp
 private val NotchGap     = 10.dp
@@ -35,7 +38,8 @@ private val NotchReach     = 20.dp   // radio del hombro (cuarto de círculo de 
 fun NotchedBottomBar(
     selectedTab:   HomeTab,
     onTabSelected: (HomeTab) -> Unit,
-    onAddClick:    () -> Unit
+    onAddClick:    () -> Unit,
+    modifier:      Modifier = Modifier
 ) {
     val fabOverhang  = NotchedBarFabOverhang
     val sysNavBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -46,7 +50,7 @@ fun NotchedBottomBar(
     // El Box externo ocupa la pantalla completa en ancho para centrar bien el FAB,
     // pero el contenido visual (barra + ítems) tiene márgenes horizontales.
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(totalHeight)
     ) {
@@ -131,30 +135,30 @@ fun NotchedBottomBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             BottomNavItem(
-                modifier  = Modifier.weight(1f),
+                modifier  = Modifier.weight(0.23f),
                 selected  = selectedTab == HomeTab.HOME,
                 icon      = Icons.Default.Home,
                 label     = "Inicio",
                 onClick   = { onTabSelected(HomeTab.HOME) }
             )
             BottomNavItem(
-                modifier  = Modifier.weight(1f),
+                modifier  = Modifier.weight(0.23f),
                 selected  = selectedTab == HomeTab.SAVINGS,
                 icon      = Icons.Default.Savings,
                 label     = "Ahorros",
                 onClick   = { onTabSelected(HomeTab.SAVINGS) }
             )
             // Espacio para el FAB
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.weight(0.08f))
             BottomNavItem(
-                modifier  = Modifier.weight(1f),
+                modifier  = Modifier.weight(0.23f),
                 selected  = selectedTab == HomeTab.INVESTMENTS,
                 icon      = Icons.AutoMirrored.Filled.TrendingUp,
                 label     = "Inversiones",
                 onClick   = { onTabSelected(HomeTab.INVESTMENTS) }
             )
             BottomNavItem(
-                modifier  = Modifier.weight(1f),
+                modifier  = Modifier.weight(0.23f),
                 selected  = selectedTab == HomeTab.REPORTS,
                 icon      = Icons.Default.BarChart,
                 label     = "Reportes",
