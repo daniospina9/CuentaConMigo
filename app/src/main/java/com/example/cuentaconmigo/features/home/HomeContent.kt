@@ -345,17 +345,24 @@ private fun AiRegistrationCard(
                     .shadow(elevation = 4.dp, shape = CircleShape)
                     .clip(CircleShape)
                     .background(
-                        Brush.radialGradient(
+                        Brush.linearGradient(
                             colorStops = arrayOf(
-                                0.0f  to Color(0xFF158B28),
-                                0.70f to Color(0xFF158B28),
-                                0.74f to Color(0xFF178E29),
-                                0.79f to Color(0xFF1C962B),
-                                0.84f to Color(0xFF23A22E),
-                                0.89f to Color(0xFF2DB231),
-                                0.94f to Color(0xFF3AC535),
-                                1.0f  to Color(0xFF49E53C)
-                            )
+                                0.0f  to Color(0xFF49E53C),
+                                0.05f to Color(0xFF40D738),
+                                0.10f to Color(0xFF36CA35),
+                                0.15f to Color(0xFF2DBB32),
+                                0.21f to Color(0xFF26AD2F),
+                                0.28f to Color(0xFF20A02D),
+                                0.35f to Color(0xFF1C982B),
+                                0.42f to Color(0xFF19922A),
+                                0.50f to Color(0xFF178F29),
+                                0.60f to Color(0xFF168D29),
+                                0.70f to Color(0xFF168C28),
+                                0.80f to Color(0xFF158B28),
+                                1.0f  to Color(0xFF158B28)
+                            ),
+                            start = Offset(0f, 0f),
+                            end   = Offset(0f, Float.POSITIVE_INFINITY)
                         )
                     )
                     .clickable(
