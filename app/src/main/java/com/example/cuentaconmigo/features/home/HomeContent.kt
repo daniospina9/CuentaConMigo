@@ -254,7 +254,7 @@ fun HomeContent(
         // ── Cuentas de depósito ───────────────────────────────────────────────
         SectionLabel(
             text = "Cuentas de depósito",
-            modifier = Modifier.padding(horizontal = 20.dp)
+            modifier = Modifier.padding(horizontal = 20.dp),
         )
         Spacer(Modifier.height(10.dp))
 
@@ -335,17 +335,17 @@ private fun AiRegistrationCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F6EE)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+            modifier = Modifier.padding(start = 3.dp, end = 16.dp, bottom = 16.dp, top = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Contenido izquierdo
             Column(
-                modifier = Modifier.weight(0.6f),
+                modifier = Modifier.weight(0.65f),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Row(
@@ -361,21 +361,21 @@ private fun AiRegistrationCard(
                     Text(
                         text = "Registro inteligente con IA",
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    modifier = Modifier.padding(start = 28.dp),
+                    modifier = Modifier.padding(start = 40.dp),
                     text = "Habla y deja que la IA registre por ti.",
                     style = MaterialTheme.typography.bodySmall,
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Spacer(modifier = Modifier.weight(0.1f))
+            Spacer(modifier = Modifier.weight(0.08f))
 
             // Botón micrófono
             Box(
@@ -420,7 +420,7 @@ private fun AiRegistrationCard(
                     modifier = Modifier.size(44.dp)
                 )
             }
-            Spacer(modifier = Modifier.weight(0.05f))
+            Spacer(modifier = Modifier.weight(0.02f))
         }
     }
 }
@@ -430,8 +430,8 @@ private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurface,
         modifier = modifier
     )
 }
