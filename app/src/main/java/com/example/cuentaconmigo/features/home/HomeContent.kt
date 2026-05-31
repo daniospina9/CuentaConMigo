@@ -2,35 +2,65 @@ package com.example.cuentaconmigo.features.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.ripple
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.cuentaconmigo.core.util.toCopString
 import com.example.cuentaconmigo.features.main.Routes
-import com.example.cuentaconmigo.ui.theme.Green10
 import com.example.cuentaconmigo.ui.theme.Green40
 
 // Colores para avatares de cuentas — determinísticos por ID
@@ -224,7 +254,7 @@ fun HomeContent(
         // ── Cuentas de depósito ───────────────────────────────────────────────
         SectionLabel(
             text = "Cuentas de depósito",
-            modifier = Modifier.padding(horizontal = 20.dp)
+            modifier = Modifier.padding(horizontal = 20.dp),
         )
         Spacer(Modifier.height(10.dp))
 
@@ -305,16 +335,19 @@ private fun AiRegistrationCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F6EE)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+            modifier = Modifier.padding(start = 3.dp, end = 16.dp, bottom = 16.dp, top = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Contenido izquierdo
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier.weight(0.65f),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -328,46 +361,34 @@ private fun AiRegistrationCard(
                     Text(
                         text = "Registro inteligente con IA",
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    text = "Habla y deja que la IA registre y clasifique tus movimientos por ti.",
+                    modifier = Modifier.padding(start = 40.dp),
+                    text = "Habla y deja que la IA registre por ti.",
                     style = MaterialTheme.typography.bodySmall,
+                    fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(Modifier.height(10.dp))
-                Row(
-                    verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Mic,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(14.dp).padding(top = 1.dp)
-                    )
-                    Text(
-                        text = "Ejemplo: \"24 ml en almuerzo y 10 ml en transporte\"",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontStyle = FontStyle.Italic,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
+            Spacer(modifier = Modifier.weight(0.08f))
 
             // Botón micrófono
             Box(
                 modifier = Modifier
+                    .weight(0.25f)
+                    .wrapContentSize(Alignment.Center)
                     .size(70.dp)
                     .shadow(elevation = 4.dp, shape = CircleShape)
                     .clip(CircleShape)
                     .background(
                         Brush.linearGradient(
                             colorStops = arrayOf(
-                                0.0f  to Color(0xFF49E53C),
+                                0.0f to Color(0xFF49E53C),
                                 0.05f to Color(0xFF40D738),
                                 0.10f to Color(0xFF36CA35),
                                 0.15f to Color(0xFF2DBB32),
@@ -379,26 +400,27 @@ private fun AiRegistrationCard(
                                 0.60f to Color(0xFF168D29),
                                 0.70f to Color(0xFF168C28),
                                 0.80f to Color(0xFF158B28),
-                                1.0f  to Color(0xFF158B28)
+                                1.0f to Color(0xFF158B28)
                             ),
                             start = Offset(0f, 0f),
-                            end   = Offset(0f, Float.POSITIVE_INFINITY)
+                            end = Offset(0f, Float.POSITIVE_INFINITY)
                         )
                     )
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
-                        indication        = ripple(color = Color.White),
-                        onClick           = onMicClick
+                        indication = ripple(color = Color.White),
+                        onClick = onMicClick
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector        = Icons.Default.Mic,
+                    imageVector = Icons.Default.Mic,
                     contentDescription = "Registrar por voz",
-                    tint               = Color.White,
-                    modifier           = Modifier.size(44.dp)
+                    tint = Color.White,
+                    modifier = Modifier.size(44.dp)
                 )
             }
+            Spacer(modifier = Modifier.weight(0.02f))
         }
     }
 }
@@ -408,8 +430,8 @@ private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurface,
         modifier = modifier
     )
 }
