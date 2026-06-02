@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -24,6 +25,7 @@ import com.example.cuentaconmigo.features.main.Routes
 fun ReportsContent(
     userId: Long,
     navController: NavController,
+    bottomPadding: Dp = 0.dp,
     viewModel: ReportsViewModel = hiltViewModel()
 ) {
     val reportState by viewModel.reportState.collectAsState()
@@ -64,7 +66,7 @@ fun ReportsContent(
 
         LazyColumn(
             Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 80.dp)
+            contentPadding = PaddingValues(bottom = bottomPadding)
         ) {
             item {
                 Text(

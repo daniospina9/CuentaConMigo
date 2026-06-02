@@ -23,13 +23,13 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 // Cuánto sobresale el FAB sobre la barra — usado en MainScreen para ajustar padding
 val NotchedBarFabOverhang = 28.dp
-
-// Padding inferior que el contenido necesita para no quedar tapado por la barra
-val NotchedBarContentPadding = 90.dp   // BarHeight(80) + BottomMargin(10)
 
 private val FabSize      = 56.dp
 private val BarHeight    = 80.dp
@@ -41,16 +41,18 @@ private val NotchReach     = 20.dp   // radio del hombro (cuarto de círculo de 
 
 @Composable
 fun NotchedBottomBar(
-    selectedTab:   HomeTab,
-    onTabSelected: (HomeTab) -> Unit,
-    onAddClick:    () -> Unit,
-    modifier:      Modifier = Modifier
+    selectedTab:      HomeTab,
+    onTabSelected:    (HomeTab) -> Unit,
+    onAddClick:       () -> Unit,
+    modifier:         Modifier = Modifier,
+    onHeightMeasured: (Dp) -> Unit = {}
 ) {
     val fabOverhang  = NotchedBarFabOverhang
     val sysNavBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     // Altura total medida por el Scaffold (incluye margen inferior + sys nav)
     val totalHeight   = BarHeight + fabOverhang + sysNavBottom + BottomMargin
     val barColor      = Color.White
+    val density       = LocalDensity.current
 
     // El Box externo ocupa la pantalla completa en ancho para centrar bien el FAB,
     // pero el contenido visual (barra + ítems) tiene márgenes horizontales.
@@ -58,6 +60,11 @@ fun NotchedBottomBar(
         modifier = modifier
             .fillMaxWidth()
             .height(totalHeight)
+            // Reporta la altura real de la barra para que el contenido aplique
+            // el bottomPadding necesario y no quede tapado.
+            .onSizeChanged { size ->
+                onHeightMeasured(with(density) { size.height.toDp() })
+            }
     ) {
         // ── Fondo flotante: rect redondeado + hueco central ───────────────
         Canvas(

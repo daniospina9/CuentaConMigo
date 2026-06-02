@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -82,6 +83,7 @@ private fun avatarColor(accountId: Long): Color =
 fun HomeContent(
     userId: Long,
     navController: NavController,
+    bottomPadding: Dp = 0.dp,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val userName by viewModel.userName.collectAsState()
@@ -321,7 +323,8 @@ fun HomeContent(
             )
         }
 
-        Spacer(Modifier.height(100.dp))
+        // Espacio para que la barra flotante no tape el último contenido.
+        Spacer(Modifier.height(bottomPadding))
     }
 }
 
