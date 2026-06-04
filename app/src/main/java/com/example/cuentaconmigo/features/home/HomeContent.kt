@@ -270,7 +270,7 @@ fun HomeContent(
         } else {
             Column(
                 modifier = Modifier.padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 accounts.forEach { (account, balance) ->
                     DepositAccountRow(
@@ -498,7 +498,7 @@ private fun DepositAccountRow(
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 14.dp, vertical = 10.dp)
+                .padding(horizontal = 6.dp, vertical = 6.dp)
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
