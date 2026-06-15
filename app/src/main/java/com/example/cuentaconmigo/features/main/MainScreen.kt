@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.cuentaconmigo.features.home.HomeContent
 import com.example.cuentaconmigo.features.investments.InvestmentContent
@@ -24,6 +25,9 @@ enum class HomeTab(val label: String) {
 @Composable
 fun MainScreen(userId: Long, navController: NavController) {
     var selectedTab by remember { mutableStateOf(HomeTab.HOME) }
+    // Altura real de la barra flotante, medida por NotchedBottomBar y aplicada
+    // como bottomPadding del contenido para que no quede tapado.
+    var bottomBarHeight by remember { mutableStateOf(0.dp) }
 
     Box(Modifier.fillMaxSize()) {
         Scaffold(
@@ -41,7 +45,11 @@ fun MainScreen(userId: Long, navController: NavController) {
                     )
             ) {
                 when (selectedTab) {
-                    HomeTab.HOME -> HomeContent(userId = userId, navController = navController)
+                    HomeTab.HOME -> HomeContent(
+                        userId = userId,
+                        navController = navController,
+                        bottomPadding = bottomBarHeight
+                    )
                     HomeTab.SAVINGS -> SavingsContent(
                         onNavigateToDetail = { accountId ->
                             navController.navigate(Routes.savingsDetail(userId, accountId))
@@ -52,16 +60,21 @@ fun MainScreen(userId: Long, navController: NavController) {
                             navController.navigate(Routes.investmentDetail(userId, accountId))
                         }
                     )
-                    HomeTab.REPORTS -> ReportsContent(userId = userId, navController = navController)
+                    HomeTab.REPORTS -> ReportsContent(
+                        userId = userId,
+                        navController = navController,
+                        bottomPadding = bottomBarHeight
+                    )
                 }
             }
         }
 
         NotchedBottomBar(
-            modifier       = Modifier.align(Alignment.BottomCenter),
-            selectedTab    = selectedTab,
-            onTabSelected  = { selectedTab = it },
-            onAddClick     = { navController.navigate(Routes.transactionForm(userId, "EXPENSE")) }
+            modifier         = Modifier.align(Alignment.BottomCenter),
+            selectedTab      = selectedTab,
+            onTabSelected    = { selectedTab = it },
+            onAddClick       = { navController.navigate(Routes.transactionForm(userId, "EXPENSE")) },
+            onHeightMeasured = { bottomBarHeight = it }
         )
     }
 }

@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -82,6 +83,7 @@ private fun avatarColor(accountId: Long): Color =
 fun HomeContent(
     userId: Long,
     navController: NavController,
+    bottomPadding: Dp = 0.dp,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val userName by viewModel.userName.collectAsState()
@@ -268,7 +270,7 @@ fun HomeContent(
         } else {
             Column(
                 modifier = Modifier.padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 accounts.forEach { (account, balance) ->
                     DepositAccountRow(
@@ -321,7 +323,8 @@ fun HomeContent(
             )
         }
 
-        Spacer(Modifier.height(100.dp))
+        // Espacio para que la barra flotante no tape el último contenido.
+        Spacer(Modifier.height(bottomPadding))
     }
 }
 
@@ -495,7 +498,7 @@ private fun DepositAccountRow(
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 14.dp, vertical = 10.dp)
+                .padding(horizontal = 6.dp, vertical = 6.dp)
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
