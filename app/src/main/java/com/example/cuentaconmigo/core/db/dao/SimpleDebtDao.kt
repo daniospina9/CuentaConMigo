@@ -19,8 +19,8 @@ interface SimpleDebtDao {
     @Delete
     suspend fun delete(debt: SimpleDebtEntity)
 
-    @Query("SELECT * FROM simple_debts WHERE userId = :userId AND isActive = 1 ORDER BY createdAt DESC")
-    fun getActive(userId: Long): Flow<List<SimpleDebtEntity>>
+    @Query("SELECT * FROM simple_debts WHERE userId = :userId AND kind = :kind AND isActive = 1 ORDER BY createdAt DESC")
+    fun getActive(userId: Long, kind: String): Flow<List<SimpleDebtEntity>>
 
     @Query("SELECT * FROM simple_debts WHERE id = :id")
     fun getById(id: Long): Flow<SimpleDebtEntity?>

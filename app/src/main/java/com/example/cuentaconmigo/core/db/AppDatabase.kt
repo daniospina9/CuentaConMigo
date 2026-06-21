@@ -49,7 +49,7 @@ import com.example.cuentaconmigo.core.db.entities.UserEntity
         SimpleDebtEntity::class,
         SimpleDebtTransactionEntity::class
     ],
-    version = 16,
+    version = 17,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -327,6 +327,13 @@ abstract class AppDatabase : RoomDatabase() {
                 """.trimIndent())
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_simple_debt_transactions_debtId ON simple_debt_transactions(debtId)")
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_simple_debt_transactions_userId ON simple_debt_transactions(userId)")
+            }
+        }
+
+        val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Discriminador de tipo de cuenta: las existentes quedan como préstamos recibidos.
+                database.execSQL("ALTER TABLE simple_debts ADD COLUMN kind TEXT NOT NULL DEFAULT 'RECEIVED'")
             }
         }
 

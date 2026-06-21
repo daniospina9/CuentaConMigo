@@ -9,7 +9,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.cuentaconmigo.features.accounts.deposit.DepositAccountListScreen
 import com.example.cuentaconmigo.features.debts.CreditCardDetailScreen
+import com.example.cuentaconmigo.features.debts.DebtHubScreen
 import com.example.cuentaconmigo.features.debts.DebtListScreen
+import com.example.cuentaconmigo.features.debts.LoanDetailScreen
+import com.example.cuentaconmigo.features.debts.LoanListScreen
 import com.example.cuentaconmigo.features.debts.SimpleDebtDetailScreen
 import com.example.cuentaconmigo.features.accounts.destination.DestinationAccountListScreen
 import com.example.cuentaconmigo.features.home.DepositAccountTransactionsScreen
@@ -43,9 +46,12 @@ object Routes {
     const val SAVINGS_SUB_ACCOUNT = "savings_sub_account/{userId}/{subAccountId}"
     const val DEPOSIT_ACCOUNT_TRANSACTIONS =
         "deposit_account_transactions/{userId}/{depositAccountId}?accountName={accountName}"
+    const val DEBT_HUB = "debt_hub/{userId}"
     const val DEBT_LIST = "debt_list/{userId}"
     const val CREDIT_CARD_DETAIL = "credit_card_detail/{userId}/{creditCardId}"
     const val SIMPLE_DEBT_DETAIL = "simple_debt_detail/{userId}/{debtId}"
+    const val LOAN_LIST = "loan_list/{userId}"
+    const val LOAN_DETAIL = "loan_detail/{userId}/{loanId}"
 
     fun home(userId: Long) = "home/$userId"
     fun depositAccounts(userId: Long) = "deposit_accounts/$userId"
@@ -65,9 +71,12 @@ object Routes {
     fun savingsSubAccount(userId: Long, subAccountId: Long) = "savings_sub_account/$userId/$subAccountId"
     fun depositAccountTransactions(userId: Long, depositAccountId: Long, accountName: String) =
         "deposit_account_transactions/$userId/$depositAccountId?accountName=${Uri.encode(accountName)}"
+    fun debtHub(userId: Long) = "debt_hub/$userId"
     fun debtList(userId: Long) = "debt_list/$userId"
     fun creditCardDetail(userId: Long, creditCardId: Long) = "credit_card_detail/$userId/$creditCardId"
     fun simpleDebtDetail(userId: Long, debtId: Long) = "simple_debt_detail/$userId/$debtId"
+    fun loanList(userId: Long) = "loan_list/$userId"
+    fun loanDetail(userId: Long, loanId: Long) = "loan_detail/$userId/$loanId"
 }
 
 @Composable
@@ -256,6 +265,18 @@ fun AppNavGraph() {
         }
 
         composable(
+            route = Routes.DEBT_HUB,
+            arguments = listOf(navArgument("userId") { type = NavType.LongType })
+        ) { backStack ->
+            val userId = backStack.arguments!!.getLong("userId")
+            DebtHubScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToDebts = { navController.navigate(Routes.debtList(userId)) },
+                onNavigateToLoans = { navController.navigate(Routes.loanList(userId)) }
+            )
+        }
+
+        composable(
             route = Routes.DEBT_LIST,
             arguments = listOf(navArgument("userId") { type = NavType.LongType })
         ) { backStack ->
@@ -289,6 +310,29 @@ fun AppNavGraph() {
             )
         ) {
             SimpleDebtDetailScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable(
+            route = Routes.LOAN_LIST,
+            arguments = listOf(navArgument("userId") { type = NavType.LongType })
+        ) { backStack ->
+            val userId = backStack.arguments!!.getLong("userId")
+            LoanListScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToDetail = { loanId ->
+                    navController.navigate(Routes.loanDetail(userId, loanId))
+                }
+            )
+        }
+
+        composable(
+            route = Routes.LOAN_DETAIL,
+            arguments = listOf(
+                navArgument("userId") { type = NavType.LongType },
+                navArgument("loanId") { type = NavType.LongType }
+            )
+        ) {
+            LoanDetailScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }

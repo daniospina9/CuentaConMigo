@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cuentaconmigo.domain.model.AccountType
+import com.example.cuentaconmigo.domain.model.SimpleDebtKind
 import com.example.cuentaconmigo.domain.model.Transaction
 import com.example.cuentaconmigo.domain.repository.CreditCardRepository
 import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
@@ -51,6 +52,10 @@ class AccountTransactionsViewModel @Inject constructor(
 
     val simpleDebtLinkedIds: StateFlow<Set<Long>> = simpleDebtRepository.getAllLinkedTransactionIds()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
+    val loanGivenLinkedIds: StateFlow<Set<Long>> =
+        simpleDebtRepository.getLinkedTransactionIdsByKind(SimpleDebtKind.GIVEN)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
     private var pendingDelete: Transaction? = null
 

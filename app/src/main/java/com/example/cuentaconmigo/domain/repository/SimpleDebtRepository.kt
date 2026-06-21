@@ -1,11 +1,12 @@
 package com.example.cuentaconmigo.domain.repository
 
 import com.example.cuentaconmigo.domain.model.SimpleDebt
+import com.example.cuentaconmigo.domain.model.SimpleDebtKind
 import com.example.cuentaconmigo.domain.model.SimpleDebtTransaction
 import kotlinx.coroutines.flow.Flow
 
 interface SimpleDebtRepository {
-    fun getActive(userId: Long): Flow<List<SimpleDebt>>
+    fun getActive(userId: Long, kind: SimpleDebtKind): Flow<List<SimpleDebt>>
     fun getById(id: Long): Flow<SimpleDebt?>
     suspend fun create(debt: SimpleDebt): Long
     suspend fun update(debt: SimpleDebt)
@@ -19,4 +20,5 @@ interface SimpleDebtRepository {
     suspend fun hasTransactions(debtId: Long): Boolean
     suspend fun getTransactionByLinkedId(linkedTransactionId: Long): SimpleDebtTransaction?
     fun getAllLinkedTransactionIds(): Flow<Set<Long>>
+    fun getLinkedTransactionIdsByKind(kind: SimpleDebtKind): Flow<Set<Long>>
 }

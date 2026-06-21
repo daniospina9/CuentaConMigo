@@ -5,6 +5,7 @@ import com.example.cuentaconmigo.core.db.dao.SimpleDebtTransactionDao
 import com.example.cuentaconmigo.core.db.repository.mappers.toDomain
 import com.example.cuentaconmigo.core.db.repository.mappers.toEntity
 import com.example.cuentaconmigo.domain.model.SimpleDebt
+import com.example.cuentaconmigo.domain.model.SimpleDebtKind
 import com.example.cuentaconmigo.domain.model.SimpleDebtTransaction
 import com.example.cuentaconmigo.domain.repository.SimpleDebtRepository
 import kotlinx.coroutines.flow.Flow
@@ -18,8 +19,8 @@ class SimpleDebtRepositoryImpl @Inject constructor(
     private val txDao: SimpleDebtTransactionDao
 ) : SimpleDebtRepository {
 
-    override fun getActive(userId: Long): Flow<List<SimpleDebt>> =
-        debtDao.getActive(userId).map { list -> list.map { it.toDomain() } }
+    override fun getActive(userId: Long, kind: SimpleDebtKind): Flow<List<SimpleDebt>> =
+        debtDao.getActive(userId, kind.name).map { list -> list.map { it.toDomain() } }
 
     override fun getById(id: Long): Flow<SimpleDebt?> =
         debtDao.getById(id).map { it?.toDomain() }
@@ -56,4 +57,7 @@ class SimpleDebtRepositoryImpl @Inject constructor(
 
     override fun getAllLinkedTransactionIds(): Flow<Set<Long>> =
         txDao.getAllLinkedTransactionIds().map { it.toSet() }
+
+    override fun getLinkedTransactionIdsByKind(kind: SimpleDebtKind): Flow<Set<Long>> =
+        txDao.getLinkedTransactionIdsByKind(kind.name).map { it.toSet() }
 }

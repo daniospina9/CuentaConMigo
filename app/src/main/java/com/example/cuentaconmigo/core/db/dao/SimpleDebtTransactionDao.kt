@@ -24,8 +24,8 @@ interface SimpleDebtTransactionDao {
 
     @Query("""
         SELECT COALESCE(
-            SUM(CASE WHEN type IN ('LOAN_RECEIVED', 'INTEREST') THEN amount ELSE 0 END) -
-            SUM(CASE WHEN type = 'PAYMENT' THEN amount ELSE 0 END),
+            SUM(CASE WHEN type IN ('LOAN_RECEIVED', 'LOAN_GIVEN', 'INTEREST') THEN amount ELSE 0 END) -
+            SUM(CASE WHEN type IN ('PAYMENT', 'COLLECTION') THEN amount ELSE 0 END),
         0) FROM simple_debt_transactions WHERE debtId = :debtId
     """)
     fun getCurrentDebt(debtId: Long): Flow<Long>
@@ -41,4 +41,11 @@ interface SimpleDebtTransactionDao {
 
     @Query("SELECT linkedTransactionId FROM simple_debt_transactions WHERE linkedTransactionId IS NOT NULL")
     fun getAllLinkedTransactionIds(): Flow<List<Long>>
+
+    @Query("""
+        SELECT t.linkedTransactionId FROM simple_debt_transactions t
+        INNER JOIN simple_debts d ON t.debtId = d.id
+        WHERE t.linkedTransactionId IS NOT NULL AND d.kind = :kind
+    """)
+    fun getLinkedTransactionIdsByKind(kind: String): Flow<List<Long>>
 }

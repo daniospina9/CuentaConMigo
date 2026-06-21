@@ -1,12 +1,20 @@
 package com.example.cuentaconmigo.domain.model
 
+/**
+ * Discrimina el tipo de cuenta dentro del módulo:
+ * - RECEIVED: "Préstamo recibido" (dinero que me prestan a mí, es una deuda).
+ * - GIVEN: "Préstamo otorgado" (dinero que yo presto, es una cuenta por cobrar).
+ */
+enum class SimpleDebtKind { RECEIVED, GIVEN }
+
 data class SimpleDebt(
     val id: Long,
     val userId: Long,
     val name: String,
     val description: String?,
     val createdAt: Long,
-    val isActive: Boolean
+    val isActive: Boolean,
+    val kind: SimpleDebtKind = SimpleDebtKind.RECEIVED
 )
 
 data class SimpleDebtTransaction(
@@ -21,4 +29,11 @@ data class SimpleDebtTransaction(
     val linkedTransactionId: Long?
 )
 
-enum class SimpleDebtTransactionType { LOAN_RECEIVED, PAYMENT, INTEREST }
+enum class SimpleDebtTransactionType {
+    // Préstamo recibido
+    LOAN_RECEIVED, PAYMENT,
+    // Préstamo otorgado
+    LOAN_GIVEN, COLLECTION,
+    // Compartido (sube el saldo en ambos)
+    INTEREST
+}

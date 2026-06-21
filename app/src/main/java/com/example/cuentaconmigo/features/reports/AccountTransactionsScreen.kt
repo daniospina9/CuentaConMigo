@@ -32,6 +32,7 @@ fun AccountTransactionsScreen(
     val extractProtectedIds by viewModel.extractProtectedIds.collectAsState()
     val tcPurchaseLinkedIds by viewModel.tcPurchaseLinkedIds.collectAsState()
     val simpleDebtLinkedIds by viewModel.simpleDebtLinkedIds.collectAsState()
+    val loanGivenLinkedIds by viewModel.loanGivenLinkedIds.collectAsState()
     val formatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("es", "CO")) }
 
     if (showDeleteConfirm) {
@@ -79,12 +80,14 @@ fun AccountTransactionsScreen(
                     val fromExtract = tx.id in extractProtectedIds
                     val fromTcPurchase = tx.id in tcPurchaseLinkedIds
                     val fromSimpleDebt = tx.id in simpleDebtLinkedIds
+                    val fromLoanGiven = tx.id in loanGivenLinkedIds
                     TransactionListItem(
                         tx = tx,
                         formatter = formatter,
                         fromExtract = fromExtract,
                         fromTcPurchase = fromTcPurchase,
                         fromSimpleDebt = fromSimpleDebt,
+                        fromLoanGiven = fromLoanGiven,
                         onEdit = if (fromExtract || fromTcPurchase || fromSimpleDebt) null else ({ onNavigateToEdit(tx) }),
                         onDelete = if (fromExtract) null else ({ viewModel.requestDelete(tx) })
                     )
@@ -103,6 +106,7 @@ internal fun TransactionListItem(
     fromExtract: Boolean = false,
     fromTcPurchase: Boolean = false,
     fromSimpleDebt: Boolean = false,
+    fromLoanGiven: Boolean = false,
     onEdit: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null
 ) {
@@ -124,6 +128,7 @@ internal fun TransactionListItem(
                 val tag = when {
                     fromExtract -> " · Extracto TC"
                     fromTcPurchase -> " · Tarjeta de crédito"
+                    fromLoanGiven -> " · Préstamo otorgado"
                     fromSimpleDebt -> " · Préstamo recibido"
                     else -> ""
                 }
