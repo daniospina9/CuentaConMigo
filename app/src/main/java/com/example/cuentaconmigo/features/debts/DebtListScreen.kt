@@ -81,7 +81,7 @@ fun DebtListScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text("Préstamo")
+                            Text("Préstamo recibido")
                         }
                     }
                     SmallFloatingActionButton(
@@ -152,10 +152,10 @@ fun DebtListScreen(
                 }
             }
 
-            // Sección Préstamos
+            // Sección Préstamos recibidos
             item {
                 Text(
-                    "Préstamos",
+                    "Préstamos recibidos",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -171,7 +171,7 @@ fun DebtListScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            "Sin préstamos registrados.",
+                            "Sin préstamos recibidos registrados.",
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -233,11 +233,11 @@ fun DebtListScreen(
         )
     }
 
-    // Confirmar eliminar Préstamo
+    // Confirmar eliminar Préstamo recibido
     loanToDelete?.let { loan ->
         AlertDialog(
             onDismissRequest = { loanToDelete = null },
-            title = { Text("Eliminar préstamo") },
+            title = { Text("Eliminar préstamo recibido") },
             text = { Text("¿Eliminar \"${loan.name}\"? Esta acción no se puede deshacer.") },
             confirmButton = {
                 TextButton(onClick = {
@@ -324,7 +324,7 @@ private fun SimpleDebtListItem(
         },
         overlineContent = {
             Text(
-                "PRÉSTAMO",
+                "PRÉSTAMO RECIBIDO",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.tertiary
             )
@@ -356,7 +356,7 @@ private fun CreateSimpleDebtDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nuevo préstamo") },
+        title = { Text("Nuevo préstamo recibido") },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(10.dp),

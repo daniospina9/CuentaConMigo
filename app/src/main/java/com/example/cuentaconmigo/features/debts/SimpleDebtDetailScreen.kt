@@ -60,7 +60,7 @@ fun SimpleDebtDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(debt?.name ?: "Préstamo") },
+                title = { Text(debt?.name ?: "Préstamo recibido") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")

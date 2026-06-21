@@ -124,7 +124,7 @@ internal fun TransactionListItem(
                 val tag = when {
                     fromExtract -> " · Extracto TC"
                     fromTcPurchase -> " · Tarjeta de crédito"
-                    fromSimpleDebt -> " · Préstamo"
+                    fromSimpleDebt -> " · Préstamo recibido"
                     else -> ""
                 }
                 Text(tx.date.format(formatter) + tag)
