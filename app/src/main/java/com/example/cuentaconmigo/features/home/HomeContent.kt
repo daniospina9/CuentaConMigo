@@ -26,7 +26,6 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Card
@@ -50,8 +49,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -63,6 +60,7 @@ import androidx.navigation.NavController
 import com.example.cuentaconmigo.core.util.toCopString
 import com.example.cuentaconmigo.features.main.Routes
 import com.example.cuentaconmigo.ui.theme.Green40
+import com.example.cuentaconmigo.ui.theme.brand
 
 // Colores para avatares de cuentas — determinísticos por ID
 private val avatarPalette = listOf(
@@ -106,7 +104,6 @@ fun HomeContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
@@ -122,34 +119,15 @@ fun HomeContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Notifications,
-                    contentDescription = "Notificaciones",
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
         }
 
         // ── Banner verde ─────────────────────────────────────────────────────
-        val bannerGradient = Brush.linearGradient(
-            colors = listOf(Color(0xFF023505), Color(0xFF127E29)),
-            start = Offset(0f, 0f),
-            end = Offset(Float.POSITIVE_INFINITY, 0f)
-        )
         Box(
             modifier = Modifier
                 .padding(horizontal = 20.dp)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(20.dp))
-                .background(bannerGradient)
+                .background(MaterialTheme.brand.bannerGradient)
         ) {
             Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 22.dp)) {
                 // Label + dropdown
@@ -165,12 +143,12 @@ fun HomeContent(
                         Text(
                             text = "Balance total",
                             style = MaterialTheme.typography.labelLarge,
-                            color = Color.White.copy(alpha = 0.75f)
+                            color = MaterialTheme.brand.onBannerVariant
                         )
                         Icon(
                             imageVector = if (balanceVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
                             contentDescription = if (balanceVisible) "Ocultar balance" else "Mostrar balance",
-                            tint = Color.White.copy(alpha = 0.6f),
+                            tint = MaterialTheme.brand.onBannerVariant,
                             modifier = Modifier
                                 .size(16.dp)
                                 .clickable(
@@ -192,13 +170,13 @@ fun HomeContent(
                     text = if (balanceVisible) totalBalance.toCopString() else "••••••",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.brand.onBanner
                 )
 
                 Spacer(Modifier.height(16.dp))
 
                 // Divider
-                HorizontalDivider(color = Color.White.copy(alpha = 0.2f))
+                HorizontalDivider(color = MaterialTheme.brand.bannerDivider)
 
                 Spacer(Modifier.height(14.dp))
 
@@ -211,32 +189,32 @@ fun HomeContent(
                         Text(
                             text = "Ingresos",
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color.White.copy(alpha = 0.7f)
+                            color = MaterialTheme.brand.onBannerVariant
                         )
                         Spacer(Modifier.height(2.dp))
                         Text(
                             text = if (balanceVisible) income.toCopString() else "••••••",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color.White
+                            color = MaterialTheme.brand.onBanner
                         )
                     }
                     VerticalDivider(
                         modifier = Modifier.height(36.dp),
-                        color = Color.White.copy(alpha = 0.2f)
+                        color = MaterialTheme.brand.bannerDivider
                     )
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = "Gastos",
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color.White.copy(alpha = 0.7f)
+                            color = MaterialTheme.brand.onBannerVariant
                         )
                         Spacer(Modifier.height(2.dp))
                         Text(
                             text = if (balanceVisible) expenses.toCopString() else "••••••",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color.White
+                            color = MaterialTheme.brand.onBanner
                         )
                     }
                 }
@@ -338,7 +316,7 @@ private fun AiRegistrationCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F6EE)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.brand.aiCardContainer),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -388,27 +366,7 @@ private fun AiRegistrationCard(
                     .size(70.dp)
                     .shadow(elevation = 4.dp, shape = CircleShape)
                     .clip(CircleShape)
-                    .background(
-                        Brush.linearGradient(
-                            colorStops = arrayOf(
-                                0.0f to Color(0xFF49E53C),
-                                0.05f to Color(0xFF40D738),
-                                0.10f to Color(0xFF36CA35),
-                                0.15f to Color(0xFF2DBB32),
-                                0.21f to Color(0xFF26AD2F),
-                                0.28f to Color(0xFF20A02D),
-                                0.35f to Color(0xFF1C982B),
-                                0.42f to Color(0xFF19922A),
-                                0.50f to Color(0xFF178F29),
-                                0.60f to Color(0xFF168D29),
-                                0.70f to Color(0xFF168C28),
-                                0.80f to Color(0xFF158B28),
-                                1.0f to Color(0xFF158B28)
-                            ),
-                            start = Offset(0f, 0f),
-                            end = Offset(0f, Float.POSITIVE_INFINITY)
-                        )
-                    )
+                    .background(MaterialTheme.brand.aiMicGradient)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = ripple(color = Color.White),
@@ -446,7 +404,7 @@ private fun PeriodDropdown(selected: HomePeriod, onSelect: (HomePeriod) -> Unit)
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xFF023505).copy(alpha = 0.3f))
+                .background(MaterialTheme.brand.bannerOverlay)
                 .clickable { expanded = true }
                 .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
