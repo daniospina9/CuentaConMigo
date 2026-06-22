@@ -51,31 +51,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.cuentaconmigo.R
 import com.example.cuentaconmigo.core.util.toCopString
 import com.example.cuentaconmigo.features.main.Routes
 import com.example.cuentaconmigo.ui.theme.Green40
 import com.example.cuentaconmigo.ui.theme.brand
-
-// Colores para avatares de cuentas — determinísticos por ID
-private val avatarPalette = listOf(
-    Color(0xFF1E88E5),
-    Color(0xFF8E24AA),
-    Color(0xFFE53935),
-    Color(0xFF43A047),
-    Color(0xFFFF8F00),
-    Color(0xFF00ACC1),
-    Color(0xFFE91E63),
-    Color(0xFF6D4C41),
-)
-
-private fun avatarColor(accountId: Long): Color =
-    avatarPalette[(accountId % avatarPalette.size).toInt()]
 
 @Composable
 fun HomeContent(
@@ -253,7 +240,6 @@ fun HomeContent(
                 accounts.forEach { (account, balance) ->
                     DepositAccountRow(
                         name = account.name,
-                        accountId = account.id,
                         balance = balance,
                         onClick = {
                             navController.navigate(
@@ -441,7 +427,6 @@ private fun PeriodDropdown(selected: HomePeriod, onSelect: (HomePeriod) -> Unit)
 @Composable
 private fun DepositAccountRow(
     name: String,
-    accountId: Long,
     balance: Long,
     onClick: () -> Unit
 ) {
@@ -465,19 +450,19 @@ private fun DepositAccountRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Avatar circular con inicial
+                // Chip cuadrado con ícono — mismo para todas las cuentas de depósito
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(avatarColor(accountId)),
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(13.dp))
+                        .background(MaterialTheme.brand.accountChipContainer),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = name.firstOrNull()?.uppercase() ?: "?",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                    Icon(
+                        painter = painterResource(id = R.drawable.deposit_wallet),
+                        contentDescription = null,
+                        tint = MaterialTheme.brand.accountChipIcon,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
                 Column {

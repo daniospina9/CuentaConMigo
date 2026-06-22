@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.Color
 val BannerGreenDark = Color(0xFF023505)
 val BannerGreenLight = Color(0xFF127E29)
 val AiCardMint = Color(0xFFF0F6EE)
+val AccountChipGreenLight = Color(0xFF95F652)
+val AccountChipGreenDark = Color(0xFF0C7D22)
 
 // === La "caja" de tokens de marca: agrupa gradientes y colores propios ===
 @Immutable
@@ -24,6 +26,8 @@ data class BrandColors(
     val onBanner: Color,          // texto/íconos principales sobre el banner
     val onBannerVariant: Color,   // texto secundario sobre el banner
     val bannerDivider: Color,     // divisores sobre el banner
+    val accountChipContainer: Brush, // fondo (gradiente translúcido) del chip de cuenta
+    val accountChipIcon: Color,      // ícono del chip de cuenta de depósito
 )
 
 // === Instancia para tema CLARO ===
@@ -57,6 +61,15 @@ val LightBrand = BrandColors(
     onBanner = Color.White,
     onBannerVariant = Color.White.copy(alpha = 0.7f),
     bannerDivider = Color.White.copy(alpha = 0.2f),
+    accountChipContainer = Brush.linearGradient(
+        colors = listOf(
+            AccountChipGreenLight.copy(alpha = 0.50f),
+            Color(0xFF3FA52B).copy(alpha = 0.42f)
+        ),
+        start = Offset(0f, 0f),
+        end = Offset(0f, Float.POSITIVE_INFINITY)
+    ),
+    accountChipIcon = AccountChipGreenDark,
 )
 
 // === Instancia para tema OSCURO (por ahora clona la clara; se afina luego) ===
