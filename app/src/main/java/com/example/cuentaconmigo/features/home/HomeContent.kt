@@ -318,8 +318,8 @@ fun HomeContent(
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
             ManageNavRow(
                 icon = Icons.Default.CreditCard,
-                label = "Deudas",
-                onClick = { navController.navigate(Routes.debtList(userId)) }
+                label = "Deudas / Préstamos",
+                onClick = { navController.navigate(Routes.debtHub(userId)) }
             )
         }
 

@@ -23,5 +23,6 @@ data class SimpleDebtEntity(
     val name: String,
     val description: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
-    val isActive: Boolean = true
+    val isActive: Boolean = true,
+    val kind: String = "RECEIVED"          // "RECEIVED" | "GIVEN"
 )

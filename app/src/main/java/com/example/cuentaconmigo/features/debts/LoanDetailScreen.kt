@@ -33,18 +33,18 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SimpleDebtDetailScreen(
+fun LoanDetailScreen(
     onNavigateBack: () -> Unit,
-    viewModel: SimpleDebtDetailViewModel = hiltViewModel()
+    viewModel: LoanDetailViewModel = hiltViewModel()
 ) {
-    val debt by viewModel.debt.collectAsState()
-    val currentDebt by viewModel.currentDebt.collectAsState()
+    val loan by viewModel.loan.collectAsState()
+    val currentBalance by viewModel.currentBalance.collectAsState()
     val transactions by viewModel.transactions.collectAsState()
     val depositAccounts by viewModel.depositAccounts.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
     var showLoanDialog by remember { mutableStateOf(false) }
-    var showPaymentDialog by remember { mutableStateOf(false) }
+    var showCollectionDialog by remember { mutableStateOf(false) }
     var showInterestDialog by remember { mutableStateOf(false) }
     var txToDelete by remember { mutableStateOf<SimpleDebtTransaction?>(null) }
     var txToEdit by remember { mutableStateOf<SimpleDebtTransaction?>(null) }
@@ -60,7 +60,7 @@ fun SimpleDebtDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(debt?.name ?: "Préstamo recibido") },
+                title = { Text(loan?.name ?: "Préstamo otorgado") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
@@ -76,7 +76,7 @@ fun SimpleDebtDetailScreen(
                 .padding(padding),
             contentPadding = PaddingValues(bottom = 80.dp)
         ) {
-            // Resumen de deuda
+            // Resumen del préstamo
             item {
                 Card(
                     Modifier
@@ -84,7 +84,7 @@ fun SimpleDebtDetailScreen(
                         .padding(16.dp)
                 ) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        debt?.description?.let { desc ->
+                        loan?.description?.let { desc ->
                             if (desc.isNotBlank()) {
                                 Text(desc, style = MaterialTheme.typography.bodyMedium)
                                 HorizontalDivider()
@@ -94,13 +94,13 @@ fun SimpleDebtDetailScreen(
                             Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Deuda actual", style = MaterialTheme.typography.bodyMedium)
+                            Text("Te deben", style = MaterialTheme.typography.bodyMedium)
                             Text(
-                                currentDebt.toCopString(),
+                                currentBalance.toCopString(),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = if (currentDebt > 0) MaterialTheme.colorScheme.error
-                                        else MaterialTheme.colorScheme.primary
+                                color = if (currentBalance > 0) Color(0xFF2E7D32)
+                                        else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -121,7 +121,7 @@ fun SimpleDebtDetailScreen(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Registrar desembolso")
+                        Text("Registrar préstamo")
                     }
                     Row(
                         Modifier.fillMaxWidth(),
@@ -132,15 +132,15 @@ fun SimpleDebtDetailScreen(
                             modifier = Modifier.weight(1f)
                         ) { Text("Añadir intereses") }
                         OutlinedButton(
-                            onClick = { showPaymentDialog = true },
+                            onClick = { showCollectionDialog = true },
                             modifier = Modifier.weight(1f)
-                        ) { Text("Registrar pago") }
+                        ) { Text("Registrar cobro") }
                     }
                     Spacer(Modifier.height(8.dp))
                 }
             }
 
-            // Historial de transacciones
+            // Historial de movimientos
             item {
                 Text(
                     "Movimientos",
@@ -162,7 +162,7 @@ fun SimpleDebtDetailScreen(
                 }
             } else {
                 items(transactions, key = { it.id }) { tx ->
-                    SimpleDebtTxRow(
+                    LoanTxRow(
                         tx = tx,
                         onEdit = { txToEdit = tx },
                         onDelete = { txToDelete = tx }
@@ -175,8 +175,8 @@ fun SimpleDebtDetailScreen(
 
     // Dialogs
     if (showLoanDialog) {
-        SimpleDebtAmountDialog(
-            title = "Registrar desembolso",
+        LoanAmountDialog(
+            title = "Registrar préstamo",
             confirmLabel = "Registrar",
             showDepositAccount = true,
             depositAccounts = depositAccounts,
@@ -188,22 +188,22 @@ fun SimpleDebtDetailScreen(
         )
     }
 
-    if (showPaymentDialog) {
-        SimpleDebtAmountDialog(
-            title = "Registrar pago",
-            confirmLabel = "Pagar",
+    if (showCollectionDialog) {
+        LoanAmountDialog(
+            title = "Registrar cobro",
+            confirmLabel = "Cobrar",
             showDepositAccount = true,
             depositAccounts = depositAccounts,
             onConfirm = { amount, depositAccountId, description, date ->
-                viewModel.registerPaymentTx(amount, depositAccountId!!, description, date)
-                showPaymentDialog = false
+                viewModel.registerCollectionTx(amount, depositAccountId!!, description, date)
+                showCollectionDialog = false
             },
-            onDismiss = { showPaymentDialog = false }
+            onDismiss = { showCollectionDialog = false }
         )
     }
 
     if (showInterestDialog) {
-        SimpleDebtAmountDialog(
+        LoanAmountDialog(
             title = "Añadir intereses",
             confirmLabel = "Registrar",
             showDepositAccount = false,
@@ -234,7 +234,7 @@ fun SimpleDebtDetailScreen(
     }
 
     txToEdit?.let { tx ->
-        EditSimpleDebtTxDialog(
+        EditLoanTxDialog(
             tx = tx,
             onConfirm = { updated ->
                 viewModel.updateTx(updated)
@@ -246,31 +246,27 @@ fun SimpleDebtDetailScreen(
 }
 
 @Composable
-private fun SimpleDebtTxRow(
+private fun LoanTxRow(
     tx: SimpleDebtTransaction,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
     val label = when (tx.type) {
-        SimpleDebtTransactionType.LOAN_RECEIVED -> "Desembolso"
-        SimpleDebtTransactionType.PAYMENT -> "Pago"
+        SimpleDebtTransactionType.LOAN_GIVEN -> "Préstamo"
+        SimpleDebtTransactionType.COLLECTION -> "Cobro"
         SimpleDebtTransactionType.INTEREST -> "Interés"
         else -> tx.type.name
     }
-    val isCredit = tx.type == SimpleDebtTransactionType.LOAN_RECEIVED
-    val isPayment = tx.type == SimpleDebtTransactionType.PAYMENT
+    val color = when (tx.type) {
+        SimpleDebtTransactionType.COLLECTION -> Color(0xFF2E7D32)
+        SimpleDebtTransactionType.LOAN_GIVEN -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.tertiary
+    }
 
     ListItem(
         headlineContent = {
-            Text(
-                tx.amount.toCopString(),
-                color = when {
-                    isCredit -> MaterialTheme.colorScheme.primary
-                    isPayment -> Color(0xFF2E7D32)
-                    else -> MaterialTheme.colorScheme.error
-                }
-            )
+            Text(tx.amount.toCopString(), color = color)
         },
         supportingContent = {
             val desc = tx.description?.let { " · $it" } ?: ""
@@ -296,7 +292,7 @@ private fun SimpleDebtTxRow(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SimpleDebtAmountDialog(
+private fun LoanAmountDialog(
     title: String,
     confirmLabel: String,
     showDepositAccount: Boolean,
@@ -403,7 +399,7 @@ private fun SimpleDebtAmountDialog(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EditSimpleDebtTxDialog(
+private fun EditLoanTxDialog(
     tx: SimpleDebtTransaction,
     onConfirm: (SimpleDebtTransaction) -> Unit,
     onDismiss: () -> Unit
@@ -419,8 +415,8 @@ private fun EditSimpleDebtTxDialog(
     var description by remember(tx.id) { mutableStateOf(tx.description ?: "") }
 
     val label = when (tx.type) {
-        SimpleDebtTransactionType.LOAN_RECEIVED -> "Editar desembolso"
-        SimpleDebtTransactionType.PAYMENT -> "Editar pago"
+        SimpleDebtTransactionType.LOAN_GIVEN -> "Editar préstamo"
+        SimpleDebtTransactionType.COLLECTION -> "Editar cobro"
         SimpleDebtTransactionType.INTEREST -> "Editar interés"
         else -> "Editar movimiento"
     }

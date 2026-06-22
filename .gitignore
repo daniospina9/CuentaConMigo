@@ -67,5 +67,5 @@ desktop.ini
 # Kotlin compiler session files
 .kotlin/
 
-# ─── gentle-ai tooling (local cache, machine-specific) ───────────────────────
-.atl/.skill-registry.cache.json
+# ─── gentle-ai / Pi tooling (local runtime state, machine-specific) ──────────
+.atl/

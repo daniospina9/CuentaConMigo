@@ -27,10 +27,10 @@ data class SimpleDebtTransactionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val debtId: Long,
     val userId: Long,
-    val type: String,                       // "LOAN_RECEIVED" | "PAYMENT" | "INTEREST"
+    val type: String,                       // LOAN_RECEIVED | PAYMENT | LOAN_GIVEN | COLLECTION | INTEREST
     val amount: Long,                       // centavos, siempre positivo
     val description: String? = null,
     val date: Long,                         // epoch millis
-    val depositAccountId: Long? = null,     // para LOAN_RECEIVED y PAYMENT
+    val depositAccountId: Long? = null,     // para LOAN_RECEIVED, PAYMENT, LOAN_GIVEN y COLLECTION
     val linkedTransactionId: Long? = null   // ID del Transaction creado en la tabla transactions
 )
