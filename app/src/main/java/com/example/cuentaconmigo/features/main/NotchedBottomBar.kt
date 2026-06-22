@@ -16,8 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -27,6 +25,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.cuentaconmigo.ui.theme.brand
 
 // Cuánto sobresale el FAB sobre la barra — usado en MainScreen para ajustar padding
 val NotchedBarFabOverhang = 28.dp
@@ -185,22 +184,7 @@ fun NotchedBottomBar(
                 .align(Alignment.TopCenter)
                 .shadow(elevation = 8.dp, shape = CircleShape)
                 .clip(CircleShape)
-                .background(
-                    Brush.linearGradient(
-                        colorStops = arrayOf(
-                            0.0f  to Color(0xFF1EAD40),
-                            0.10f to Color(0xFF1A9E39),
-                            0.22f to Color(0xFF168F32),
-                            0.35f to Color(0xFF12802B),
-                            0.50f to Color(0xFF0D6F23),
-                            0.65f to Color(0xFF095E1B),
-                            0.80f to Color(0xFF054E14),
-                            1.0f  to Color(0xFF023505)
-                        ),
-                        start = Offset(0f, 0f),
-                        end   = Offset(0f, Float.POSITIVE_INFINITY)
-                    )
-                )
+                .background(MaterialTheme.brand.addButtonGradient)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication        = ripple(color = Color.White),

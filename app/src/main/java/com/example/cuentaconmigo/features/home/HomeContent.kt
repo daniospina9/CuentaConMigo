@@ -6,8 +6,10 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,11 +22,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
@@ -48,11 +47,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -260,29 +265,33 @@ fun HomeContent(
         )
         Spacer(Modifier.height(10.dp))
 
-        Card(
+        Row(
             modifier = Modifier
+                .fillMaxWidth()
                 .padding(horizontal = 20.dp)
-                .fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(20.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                .height(IntrinsicSize.Min),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            ManageNavRow(
-                icon = Icons.Default.AccountBalance,
+            val tileBrush = MaterialTheme.brand.addButtonGradient
+            ManageTile(
+                icon = ImageVector.vectorResource(R.drawable.deposit_accounts),
                 label = "Cuentas de depósito",
+                iconBrush = tileBrush,
+                modifier = Modifier.weight(1f).fillMaxHeight(),
                 onClick = { navController.navigate(Routes.depositAccounts(userId)) }
             )
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-            ManageNavRow(
-                icon = Icons.Default.Category,
-                label = "Cuentas destino / Categorías",
+            ManageTile(
+                icon = ImageVector.vectorResource(R.drawable.target_accounts),
+                label = "Cuentas de destino",
+                iconBrush = tileBrush,
+                modifier = Modifier.weight(1f).fillMaxHeight(),
                 onClick = { navController.navigate(Routes.destinationAccounts(userId)) }
             )
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-            ManageNavRow(
-                icon = Icons.Default.CreditCard,
-                label = "Deudas / Préstamos",
+            ManageTile(
+                icon = ImageVector.vectorResource(R.drawable.general_wallet),
+                label = "Deudas y préstamos",
+                iconBrush = tileBrush,
+                modifier = Modifier.weight(1f).fillMaxHeight(),
                 onClick = { navController.navigate(Routes.debtHub(userId)) }
             )
         }
@@ -500,48 +509,48 @@ private fun DepositAccountRow(
 }
 
 @Composable
-private fun ManageNavRow(
+private fun ManageTile(
     icon: ImageVector,
     label: String,
+    iconBrush: Brush,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    Card(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Box(
+            // Ícono grande tintado con el gradiente del botón "+"
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = Color.Black,
                 modifier = Modifier
-                    .size(34.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
+                    .size(38.dp)
+                    .graphicsLayer(alpha = 0.99f)
+                    .drawWithContent {
+                        drawContent()
+                        drawRect(brush = iconBrush, blendMode = BlendMode.SrcAtop)
+                    }
+            )
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                maxLines = 2
             )
         }
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(18.dp)
-        )
     }
 }

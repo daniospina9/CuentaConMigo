@@ -28,6 +28,7 @@ data class BrandColors(
     val bannerDivider: Color,     // divisores sobre el banner
     val accountChipContainer: Brush, // fondo (gradiente translúcido) del chip de cuenta
     val accountChipIcon: Color,      // ícono del chip de cuenta de depósito
+    val addButtonGradient: Brush,    // gradiente del botón "+" / acciones primarias
 )
 
 // === Instancia para tema CLARO ===
@@ -70,6 +71,20 @@ val LightBrand = BrandColors(
         end = Offset(0f, Float.POSITIVE_INFINITY)
     ),
     accountChipIcon = AccountChipGreenDark,
+    addButtonGradient = Brush.linearGradient(
+        colorStops = arrayOf(
+            0.0f to Color(0xFF1EAD40),
+            0.10f to Color(0xFF1A9E39),
+            0.22f to Color(0xFF168F32),
+            0.35f to Color(0xFF12802B),
+            0.50f to Color(0xFF0D6F23),
+            0.65f to Color(0xFF095E1B),
+            0.80f to Color(0xFF054E14),
+            1.0f to Color(0xFF023505)
+        ),
+        start = Offset(0f, 0f),
+        end = Offset(0f, Float.POSITIVE_INFINITY)
+    ),
 )
 
 // === Instancia para tema OSCURO (por ahora clona la clara; se afina luego) ===
