@@ -15,6 +15,7 @@ val BannerGreenLight = Color(0xFF127E29)
 val AiCardMint = Color(0xFFF0F6EE)
 val AccountChipGreenLight = Color(0xFF95F652)
 val AccountChipGreenDark = Color(0xFF0C7D22)
+val CardSurface = Color(0xFFEFF3ED) // superficie de cards — tono intermedio, no blanco puro
 
 // === La "caja" de tokens de marca: agrupa gradientes y colores propios ===
 @Immutable
@@ -29,6 +30,7 @@ data class BrandColors(
     val accountChipContainer: Brush, // fondo (gradiente translúcido) del chip de cuenta
     val accountChipIcon: Color,      // ícono del chip de cuenta de depósito
     val addButtonGradient: Brush,    // gradiente del botón "+" / acciones primarias
+    val cardSurface: Color,          // fondo de las cards (tono intermedio)
 )
 
 // === Instancia para tema CLARO ===
@@ -71,6 +73,7 @@ val LightBrand = BrandColors(
         end = Offset(0f, Float.POSITIVE_INFINITY)
     ),
     accountChipIcon = AccountChipGreenDark,
+    cardSurface = CardSurface,
     addButtonGradient = Brush.linearGradient(
         colorStops = arrayOf(
             0.0f to Color(0xFF1EAD40),
