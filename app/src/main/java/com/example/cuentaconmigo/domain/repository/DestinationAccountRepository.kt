@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface DestinationAccountRepository {
     fun getByUser(userId: Long): Flow<List<DestinationAccount>>
+    suspend fun getAllByUser(userId: Long): List<DestinationAccount>
     suspend fun create(account: DestinationAccount): Long
     suspend fun insertAll(accounts: List<DestinationAccount>)
     suspend fun update(account: DestinationAccount)

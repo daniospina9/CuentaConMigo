@@ -4,9 +4,10 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cuentaconmigo.domain.model.AccountTotal
-import com.example.cuentaconmigo.domain.model.DepositAccountStatement
+import com.example.cuentaconmigo.domain.model.IncomeStatement
 import com.example.cuentaconmigo.domain.model.Transaction
 import com.example.cuentaconmigo.domain.repository.DepositAccountRepository
+import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
 import com.example.cuentaconmigo.domain.repository.TransactionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -15,8 +16,9 @@ import java.time.LocalDate
 import javax.inject.Inject
 
 data class FinancialReportState(
-    val depositStatements: List<DepositAccountStatement> = emptyList(),
+    val incomeStatement: IncomeStatement? = null,
     val expenseByCategory: List<AccountTotal> = emptyList(),
+    val categoryNamesById: Map<Long, String> = emptyMap(),
     val transactions: List<Transaction> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
@@ -26,6 +28,7 @@ data class FinancialReportState(
 @HiltViewModel
 class FinancialReportViewModel @Inject constructor(
     private val depositAccountRepository: DepositAccountRepository,
+    private val destinationAccountRepository: DestinationAccountRepository,
     private val transactionRepository: TransactionRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -61,17 +64,29 @@ class FinancialReportViewModel @Inject constructor(
 
             val accounts = depositAccountRepository.getByUser(userId).first()
 
-            val statements = accounts.map { account ->
-                val opening = transactionRepository.getOpeningBalance(account.id, start)
-                val income = transactionRepository.getPeriodIncome(account.id, start, end)
-                val expense = transactionRepository.getPeriodExpense(account.id, start, end)
-                DepositAccountStatement(
-                    accountName = account.name,
-                    openingBalance = opening,
-                    periodIncome = income,
-                    periodExpense = expense,
-                    closingBalance = opening + income - expense
-                )
+            var openingBalance = 0L
+            var periodIncome = 0L
+            var periodExpense = 0L
+            accounts.forEach { account ->
+                openingBalance += transactionRepository.getOpeningBalance(account.id, start)
+                periodIncome += transactionRepository.getPeriodIncome(account.id, start, end)
+                periodExpense += transactionRepository.getPeriodExpense(account.id, start, end)
+            }
+            val incomeStatement = IncomeStatement(
+                openingBalance = openingBalance,
+                periodIncome = periodIncome,
+                periodExpense = periodExpense,
+                closingBalance = openingBalance + periodIncome - periodExpense
+            )
+
+            // Map every destination account id (including investment/savings
+            // sub-accounts) to its rolled-up category name: a child resolves to
+            // its parent's name, matching how expenses are grouped by category.
+            val destinationAccounts = destinationAccountRepository.getAllByUser(userId)
+            val nameById = destinationAccounts.associate { it.id to it.name }
+            val categoryNamesById = destinationAccounts.associate { account ->
+                val categoryName = account.parentAccountId?.let { nameById[it] } ?: account.name
+                account.id to categoryName
             }
 
             val transactions = transactionRepository.getNonTransferTransactions(userId, start, end)
@@ -82,8 +97,9 @@ class FinancialReportViewModel @Inject constructor(
                 .filter { it.total > 0 }
 
             _state.value = FinancialReportState(
-                depositStatements = statements,
+                incomeStatement = incomeStatement,
                 expenseByCategory = expenseTotals,
+                categoryNamesById = categoryNamesById,
                 transactions = transactions,
                 generated = true
             )

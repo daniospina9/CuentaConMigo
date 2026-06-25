@@ -18,6 +18,9 @@ class DestinationAccountRepositoryImpl @Inject constructor(
     override fun getByUser(userId: Long): Flow<List<DestinationAccount>> =
         dao.getByUser(userId).map { list -> list.map { it.toDomain() } }
 
+    override suspend fun getAllByUser(userId: Long): List<DestinationAccount> =
+        dao.getAllByUser(userId).map { it.toDomain() }
+
     override suspend fun create(account: DestinationAccount): Long =
         dao.insert(account.toEntity())
 

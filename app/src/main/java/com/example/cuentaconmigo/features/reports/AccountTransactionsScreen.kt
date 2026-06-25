@@ -107,6 +107,7 @@ internal fun TransactionListItem(
     fromTcPurchase: Boolean = false,
     fromSimpleDebt: Boolean = false,
     fromLoanGiven: Boolean = false,
+    categoryLabel: String? = null,
     onEdit: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null
 ) {
@@ -125,14 +126,15 @@ internal fun TransactionListItem(
             ),
             headlineContent = { Text(tx.description ?: "Sin descripción") },
             supportingContent = {
-                val tag = when {
+                val sourceTag = when {
                     fromExtract -> " · Extracto TC"
                     fromTcPurchase -> " · Tarjeta de crédito"
                     fromLoanGiven -> " · Préstamo otorgado"
                     fromSimpleDebt -> " · Préstamo recibido"
                     else -> ""
                 }
-                Text(tx.date.format(formatter) + tag)
+                val categoryTag = categoryLabel?.let { " · $it" } ?: ""
+                Text(tx.date.format(formatter) + sourceTag + categoryTag)
             },
             trailingContent = {
                 Text(

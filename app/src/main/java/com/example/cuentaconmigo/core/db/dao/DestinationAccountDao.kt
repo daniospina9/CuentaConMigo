@@ -26,6 +26,9 @@ interface DestinationAccountDao {
     @Query("SELECT * FROM destination_accounts WHERE userId = :userId AND parentAccountId IS NULL ORDER BY name ASC")
     fun getByUser(userId: Long): Flow<List<DestinationAccountEntity>>
 
+    @Query("SELECT * FROM destination_accounts WHERE userId = :userId")
+    suspend fun getAllByUser(userId: Long): List<DestinationAccountEntity>
+
     @Query("SELECT * FROM destination_accounts WHERE id = :id")
     suspend fun getById(id: Long): DestinationAccountEntity?
 

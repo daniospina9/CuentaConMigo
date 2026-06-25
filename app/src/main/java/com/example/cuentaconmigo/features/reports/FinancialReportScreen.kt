@@ -14,8 +14,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.cuentaconmigo.core.util.toCopString
 import com.example.cuentaconmigo.domain.model.AccountTotal
-import com.example.cuentaconmigo.domain.model.DepositAccountStatement
+import com.example.cuentaconmigo.domain.model.IncomeStatement
 import com.example.cuentaconmigo.domain.model.Transaction
+import com.example.cuentaconmigo.domain.model.TransactionType
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -96,31 +97,32 @@ fun FinancialReportScreen(
 
             if (state.generated && !state.isLoading) {
 
-                item {
-                    Spacer(Modifier.height(4.dp))
-                    Text("Estado de resultados", style = MaterialTheme.typography.titleMedium)
-                    HorizontalDivider(Modifier.padding(vertical = 4.dp))
-                }
-
-                items(state.depositStatements) { stmt ->
-                    StatementCard(stmt)
+                state.incomeStatement?.let { stmt ->
+                    item {
+                        Spacer(Modifier.height(4.dp))
+                        Text("Estado de resultados", style = MaterialTheme.typography.titleMedium)
+                        HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                    }
+                    item {
+                        StatementCard(stmt)
+                    }
                 }
 
                 if (state.expenseByCategory.isNotEmpty()) {
+                    val totalExpense = state.expenseByCategory.sumOf { it.total }
                     item {
                         Spacer(Modifier.height(4.dp))
                         Text("Gastos por categoría", style = MaterialTheme.typography.titleMedium)
                         HorizontalDivider(Modifier.padding(vertical = 4.dp))
                     }
                     items(state.expenseByCategory) { cat ->
-                        CategoryRow(cat)
+                        CategoryRow(cat, totalExpense)
                         HorizontalDivider()
                     }
                     item {
-                        val total = state.expenseByCategory.sumOf { it.total }
                         ListItem(
                             headlineContent = { Text("Total", style = MaterialTheme.typography.titleSmall) },
-                            trailingContent = { Text(total.toCopString(), style = MaterialTheme.typography.titleSmall) }
+                            trailingContent = { Text(totalExpense.toCopString(), style = MaterialTheme.typography.titleSmall) }
                         )
                     }
                 }
@@ -132,7 +134,11 @@ fun FinancialReportScreen(
                         HorizontalDivider(Modifier.padding(vertical = 4.dp))
                     }
                     items(state.transactions) { tx ->
-                        TransactionListItem(tx, txFmt)
+                        val categoryLabel = if (tx.type == TransactionType.EXPENSE)
+                            state.categoryNamesById[tx.destinationAccountId]
+                        else
+                            null
+                        TransactionListItem(tx, txFmt, categoryLabel = categoryLabel)
                         HorizontalDivider()
                     }
                 } else {
@@ -150,10 +156,10 @@ fun FinancialReportScreen(
 }
 
 @Composable
-private fun StatementCard(stmt: DepositAccountStatement) {
+private fun StatementCard(stmt: IncomeStatement) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(stmt.accountName, style = MaterialTheme.typography.titleSmall)
+            Text("Resumen general", style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.height(2.dp))
             ReportRow("Saldo inicial", stmt.openingBalance.toCopString())
             ReportRow("+ Ingresos del período", stmt.periodIncome.toCopString())
@@ -174,10 +180,20 @@ private fun ReportRow(label: String, value: String, bold: Boolean = false) {
 }
 
 @Composable
-private fun CategoryRow(cat: AccountTotal) {
+private fun CategoryRow(cat: AccountTotal, totalExpense: Long) {
+    val percentage = if (totalExpense > 0) cat.total * 100.0 / totalExpense else 0.0
     ListItem(
         headlineContent = { Text(cat.destinationAccountName) },
-        trailingContent = { Text(cat.total.toCopString()) }
+        trailingContent = {
+            Column(horizontalAlignment = Alignment.End) {
+                Text(cat.total.toCopString())
+                Text(
+                    String.format(Locale("es", "CO"), "%.1f%%", percentage),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     )
 }
 
