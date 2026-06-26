@@ -79,13 +79,19 @@ class FinancialReportViewModel @Inject constructor(
                 closingBalance = openingBalance + periodIncome - periodExpense
             )
 
-            // Map every destination account id (including investment/savings
-            // sub-accounts) to its rolled-up category name: a child resolves to
-            // its parent's name, matching how expenses are grouped by category.
+            // Map every destination account id to the label shown in the
+            // transaction detail. Top-level accounts show their own name; a
+            // sub-account (investment/savings) shows "Parent · Child" so the
+            // report keeps the category context while exposing the detail.
             val destinationAccounts = destinationAccountRepository.getAllByUser(userId)
             val nameById = destinationAccounts.associate { it.id to it.name }
             val categoryNamesById = destinationAccounts.associate { account ->
-                val categoryName = account.parentAccountId?.let { nameById[it] } ?: account.name
+                val parentName = account.parentAccountId?.let { nameById[it] }
+                val categoryName = if (parentName != null) {
+                    "$parentName · ${account.name}"
+                } else {
+                    account.name
+                }
                 account.id to categoryName
             }
 
