@@ -21,6 +21,7 @@ import com.example.cuentaconmigo.core.util.parseToCentavos
 import com.example.cuentaconmigo.core.util.toCopString
 import com.example.cuentaconmigo.core.util.toSignedCopString
 import com.example.cuentaconmigo.domain.model.DepositAccount
+import com.example.cuentaconmigo.domain.model.SavingsMovementType
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,6 +37,7 @@ fun SavingsSubAccountDetailScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     var showWithdrawDialog by remember { mutableStateOf(false) }
     var showExpenseDialog by remember { mutableStateOf(false) }
+    var showYieldDialog by remember { mutableStateOf(false) }
     var entryToDelete by remember { mutableStateOf<SavingsEntry?>(null) }
 
     Scaffold(
@@ -72,13 +74,24 @@ fun SavingsSubAccountDetailScreen(
             }
 
             item {
-                OutlinedButton(
-                    onClick = { showExpenseDialog = true },
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("Registrar gasto")
+                    OutlinedButton(
+                        onClick = { showExpenseDialog = true },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Registrar gasto")
+                    }
+                    OutlinedButton(
+                        onClick = { showYieldDialog = true },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Registrar rendimiento")
+                    }
                 }
             }
 
@@ -127,12 +140,24 @@ fun SavingsSubAccountDetailScreen(
     }
 
     if (showExpenseDialog) {
-        SavingsExpenseDialog(
+        SavingsAmountDialog(
+            title = "Registrar gasto",
             onConfirm = { amount, desc ->
                 viewModel.recordExpense(amount, desc)
                 showExpenseDialog = false
             },
             onDismiss = { showExpenseDialog = false }
+        )
+    }
+
+    if (showYieldDialog) {
+        SavingsAmountDialog(
+            title = "Registrar rendimiento",
+            onConfirm = { amount, desc ->
+                viewModel.recordYield(amount, desc)
+                showYieldDialog = false
+            },
+            onDismiss = { showYieldDialog = false }
         )
     }
 
@@ -170,9 +195,10 @@ private fun SavingsEntryRow(entry: SavingsEntry, onDelete: () -> Unit) {
     val isPositive = entry.amount >= 0
     val label = when (entry) {
         is SavingsEntry.Deposit -> "Depósito"
-        is SavingsEntry.Movement -> when {
-            entry.source.groupId != null -> "Retiro"
-            else -> "Gasto"
+        is SavingsEntry.Movement -> when (entry.source.type) {
+            SavingsMovementType.WITHDRAWAL -> "Retiro"
+            SavingsMovementType.EXPENSE -> "Gasto"
+            SavingsMovementType.YIELD -> "Rendimiento"
         }
     }
 
@@ -272,8 +298,10 @@ private fun SavingsMovementDialog(
     )
 }
 
+/** Formulario de monto + descripción, sin cuenta de depósito: sirve para gasto y rendimiento. */
 @Composable
-private fun SavingsExpenseDialog(
+private fun SavingsAmountDialog(
+    title: String,
     onConfirm: (amount: Long, description: String?) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -282,7 +310,7 @@ private fun SavingsExpenseDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Registrar gasto") },
+        title = { Text(title) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(

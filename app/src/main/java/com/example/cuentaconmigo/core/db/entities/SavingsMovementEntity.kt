@@ -30,8 +30,9 @@ data class SavingsMovementEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val userId: Long,
     val subAccountId: Long,
-    val amount: Long,           // positivo = depósito, negativo = retiro
+    val amount: Long,           // positivo = rendimiento, negativo = retiro o gasto
     val date: Long,             // LocalDate.toEpochDay()
     val description: String? = null,
-    val groupId: String? = null // liga el movimiento con su transaction pareada
+    val groupId: String? = null, // liga el movimiento con su transaction pareada
+    val type: String = "EXPENSE" // "WITHDRAWAL" | "EXPENSE" | "YIELD"
 )

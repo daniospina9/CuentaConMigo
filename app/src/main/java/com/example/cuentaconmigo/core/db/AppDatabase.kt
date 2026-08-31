@@ -49,7 +49,7 @@ import com.example.cuentaconmigo.core.db.entities.UserEntity
         SimpleDebtEntity::class,
         SimpleDebtTransactionEntity::class
     ],
-    version = 17,
+    version = 18,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -334,6 +334,17 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // Discriminador de tipo de cuenta: las existentes quedan como préstamos recibidos.
                 database.execSQL("ALTER TABLE simple_debts ADD COLUMN kind TEXT NOT NULL DEFAULT 'RECEIVED'")
+            }
+        }
+
+        val MIGRATION_17_18 = object : Migration(17, 18) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Discriminador de motivo del movimiento de ahorro. Hasta ahora el motivo se
+                // infería del signo y de groupId; eso impedía distinguir un rendimiento
+                // (positivo, sin transacción pareada) de cualquier otro movimiento.
+                database.execSQL("ALTER TABLE savings_movements ADD COLUMN type TEXT NOT NULL DEFAULT 'EXPENSE'")
+                // Backfill con la misma regla que usaba la UI: con groupId era un retiro.
+                database.execSQL("UPDATE savings_movements SET type = 'WITHDRAWAL' WHERE groupId IS NOT NULL")
             }
         }
 

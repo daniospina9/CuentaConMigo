@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.cuentaconmigo.domain.model.DepositAccount
 import com.example.cuentaconmigo.domain.model.DestinationAccount
 import com.example.cuentaconmigo.domain.model.SavingsMovement
+import com.example.cuentaconmigo.domain.model.SavingsMovementType
 import com.example.cuentaconmigo.domain.model.Transaction
 import com.example.cuentaconmigo.domain.model.TransactionType
 import kotlinx.coroutines.flow.combine
@@ -101,7 +102,8 @@ class SavingsSubAccountDetailViewModel @Inject constructor(
                     SavingsMovement(
                         id = 0, userId = userId, subAccountId = subAccountId,
                         amount = -amount, date = LocalDate.now(),
-                        description = desc, groupId = groupId
+                        description = desc, groupId = groupId,
+                        type = SavingsMovementType.WITHDRAWAL
                     )
                 )
             }.onFailure { _errorMessage.value = it.message }
@@ -115,7 +117,28 @@ class SavingsSubAccountDetailViewModel @Inject constructor(
                     SavingsMovement(
                         id = 0, userId = userId, subAccountId = subAccountId,
                         amount = -amount, date = LocalDate.now(),
-                        description = description, groupId = null
+                        description = description, groupId = null,
+                        type = SavingsMovementType.EXPENSE
+                    )
+                )
+            }.onFailure { _errorMessage.value = it.message }
+        }
+    }
+
+    /**
+     * Rendimiento abonado por el producto de ahorro (ej. intereses de un CDT).
+     * Engorda el saldo sin transaccion pareada: no es un ingreso del informe
+     * financiero hasta que se retira a una cuenta de deposito.
+     */
+    fun recordYield(amount: Long, description: String?) {
+        viewModelScope.launch {
+            runCatching {
+                savingsMovementRepository.insert(
+                    SavingsMovement(
+                        id = 0, userId = userId, subAccountId = subAccountId,
+                        amount = amount, date = LocalDate.now(),
+                        description = description?.ifBlank { null }, groupId = null,
+                        type = SavingsMovementType.YIELD
                     )
                 )
             }.onFailure { _errorMessage.value = it.message }
