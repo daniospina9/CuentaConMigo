@@ -49,7 +49,7 @@ import com.example.cuentaconmigo.core.db.entities.UserEntity
         SimpleDebtEntity::class,
         SimpleDebtTransactionEntity::class
     ],
-    version = 18,
+    version = AppDatabase.SCHEMA_VERSION,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -69,6 +69,12 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun simpleDebtTransactionDao(): SimpleDebtTransactionDao
 
     companion object {
+        // Version única del schema. Se referencia en la anotación @Database (const val
+        // funciona en anotaciones porque es constante de compilación) y en
+        // DatabaseBackupManager para validar que un backup no sea de una versión más
+        // nueva que la que soporta esta build (Room no soporta downgrade).
+        const val SCHEMA_VERSION = 18
+
         val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL(
