@@ -4,6 +4,13 @@ val localProps = Properties().also { props ->
     rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { props.load(it) }
 }
 
+// Credenciales del keystore de release. El archivo esta en .gitignore: cada maquina
+// tiene el suyo, apuntando a su propia copia del .jks. Si no existe, el build sigue
+// funcionando y la variante release simplemente queda sin firmar.
+val keystoreProps = Properties().also { props ->
+    rootProject.file("keystore.properties").takeIf { it.exists() }?.inputStream()?.use { props.load(it) }
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -47,8 +54,25 @@ android {
         )
     }
 
+    signingConfigs {
+        // Solo se declara si hay credenciales disponibles, para que clonar el repo sin
+        // keystore.properties siga permitiendo compilar.
+        if (keystoreProps.isNotEmpty()) {
+            create("release") {
+                storeFile = file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // Null cuando no hay keystore configurado: el APK sale sin firmar en vez de
+            // romper el build. Un APK sin firmar no se instala, asi que el error aparece
+            // al intentar instalarlo, no al compilar.
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
