@@ -19,7 +19,15 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.cuentaconmigo"
+        // Identidad permanente de la app para Android. Deriva de daniospina9.github.io,
+        // el subdominio de GitHub Pages asociado a la cuenta, invertido segun la
+        // convencion de Android. Cambiarlo despues de distribuir crea una app distinta
+        // y hace que los usuarios pierdan sus datos: no se toca.
+        //
+        // `namespace` (el paquete Kotlin) queda en com.example.cuentaconmigo a
+        // proposito: cambiarlo renombraria los schemas exportados de Room y no aporta
+        // nada, porque no forma parte de la identidad publica de la app.
+        applicationId = "io.github.daniospina9.cuentaconmigo"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
