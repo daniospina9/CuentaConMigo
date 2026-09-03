@@ -23,6 +23,7 @@ import com.example.cuentaconmigo.features.savings.SavingsDetailScreen
 import com.example.cuentaconmigo.features.savings.SavingsSubAccountDetailScreen
 import com.example.cuentaconmigo.features.reports.AccountTransactionsScreen
 import com.example.cuentaconmigo.features.reports.FinancialReportScreen
+import com.example.cuentaconmigo.features.settings.SettingsScreen
 import com.example.cuentaconmigo.features.transactions.form.TransactionFormScreen
 import com.example.cuentaconmigo.features.transactions.transfer.TransferScreen
 import com.example.cuentaconmigo.features.transactions.voice.VoiceInputScreen
@@ -52,6 +53,7 @@ object Routes {
     const val SIMPLE_DEBT_DETAIL = "simple_debt_detail/{userId}/{debtId}"
     const val LOAN_LIST = "loan_list/{userId}"
     const val LOAN_DETAIL = "loan_detail/{userId}/{loanId}"
+    const val SETTINGS = "settings/{userId}"
 
     fun home(userId: Long) = "home/$userId"
     fun depositAccounts(userId: Long) = "deposit_accounts/$userId"
@@ -77,6 +79,7 @@ object Routes {
     fun simpleDebtDetail(userId: Long, debtId: Long) = "simple_debt_detail/$userId/$debtId"
     fun loanList(userId: Long) = "loan_list/$userId"
     fun loanDetail(userId: Long, loanId: Long) = "loan_detail/$userId/$loanId"
+    fun settings(userId: Long) = "settings/$userId"
 }
 
 @Composable
@@ -333,6 +336,13 @@ fun AppNavGraph() {
             )
         ) {
             LoanDetailScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable(
+            route = Routes.SETTINGS,
+            arguments = listOf(navArgument("userId") { type = NavType.LongType })
+        ) {
+            SettingsScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }
