@@ -52,6 +52,14 @@ android {
             "OPENROUTER_MODEL",
             "\"${localProps.getProperty("OPENROUTER_MODEL", "qwen/qwen3.5-flash-02-23")}\""
         )
+        // URL del manifiesto de versión remota. Queda horneada en cada APK publicado:
+        // cambiarla rompe la compatibilidad con builds ya distribuidas, así que no se
+        // toca (no es configurable por local.properties a propósito).
+        buildConfigField(
+            "String",
+            "UPDATE_MANIFEST_URL",
+            "\"https://daniospina9.github.io/releases/cuentaconmigo/version.json\""
+        )
     }
 
     signingConfigs {
@@ -128,6 +136,11 @@ dependencies {
     implementation(libs.okhttp)
 
     testImplementation(libs.junit)
+    // org.json en la JVM: en unit tests puros (sin Robolectric) las clases org.json.*
+    // que vienen del framework Android son stubs que lanzan RuntimeException("Stub!").
+    // Esta dependencia trae la implementación real para que UpdateManifestParserTest
+    // corra sin instrumentación.
+    testImplementation(libs.json)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

@@ -35,5 +35,9 @@ abstract class NetworkModule {
         @Provides
         @Named("openrouter_api_key")
         fun provideOpenRouterApiKey(): String = BuildConfig.OPENROUTER_API_KEY
+
+        @Provides
+        @Named("update_manifest_url")
+        fun provideUpdateManifestUrl(): String = BuildConfig.UPDATE_MANIFEST_URL
     }
 }
