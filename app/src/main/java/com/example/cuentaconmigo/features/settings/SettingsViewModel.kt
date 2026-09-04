@@ -4,9 +4,13 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cuentaconmigo.BuildConfig
 import com.example.cuentaconmigo.core.backup.BackupValidation
 import com.example.cuentaconmigo.core.backup.DatabaseBackupManager
 import com.example.cuentaconmigo.core.backup.RestoreResult
+import com.example.cuentaconmigo.core.update.UpdateCheckClient
+import com.example.cuentaconmigo.core.update.UpdateCheckResult
+import com.example.cuentaconmigo.core.update.UpdateManifest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -28,14 +32,56 @@ sealed interface BackupOperationState {
     data class Error(val message: String) : BackupOperationState
 }
 
+/** Estado de la verificación de actualizaciones, mostrado por [SettingsScreen]. */
+sealed interface UpdateCheckState {
+    data object Idle : UpdateCheckState
+    data object Checking : UpdateCheckState
+    data class UpdateAvailable(val manifest: UpdateManifest) : UpdateCheckState
+    data object UpToDate : UpdateCheckState
+    data class Error(val message: String) : UpdateCheckState
+}
+
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val backupManager: DatabaseBackupManager
+    private val backupManager: DatabaseBackupManager,
+    private val updateCheckClient: UpdateCheckClient
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<BackupOperationState>(BackupOperationState.Idle)
     val state: StateFlow<BackupOperationState> = _state.asStateFlow()
+
+    private val _updateCheckState = MutableStateFlow<UpdateCheckState>(UpdateCheckState.Idle)
+    val updateCheckState: StateFlow<UpdateCheckState> = _updateCheckState.asStateFlow()
+
+    /** Chequeo manual de actualizaciones: no se dispara automáticamente en ningún lado. */
+    fun checkForUpdates() {
+        viewModelScope.launch {
+            _updateCheckState.value = UpdateCheckState.Checking
+            _updateCheckState.value = when (
+                val result = updateCheckClient.checkForUpdate(BuildConfig.VERSION_CODE)
+            ) {
+                is UpdateCheckResult.UpdateAvailable -> UpdateCheckState.UpdateAvailable(result.manifest)
+                is UpdateCheckResult.UpToDate -> UpdateCheckState.UpToDate
+                is UpdateCheckResult.Failed -> UpdateCheckState.Error(
+                    "No se pudo comprobar si hay actualizaciones. Revisa tu conexión e intenta de nuevo."
+                )
+            }
+        }
+    }
+
+    fun consumeUpdateCheckState() {
+        _updateCheckState.value = UpdateCheckState.Idle
+    }
+
+    /** La pantalla llama a esto cuando no pudo abrir el navegador para descargar el APK
+     *  (por ejemplo, `ActivityNotFoundException`). Reutiliza el mismo camino de error
+     *  que un chequeo fallido, para que la persona usuaria vea un único tipo de diálogo. */
+    fun onDownloadLinkUnavailable() {
+        _updateCheckState.value = UpdateCheckState.Error(
+            "No se encontró una aplicación para abrir el enlace de descarga."
+        )
+    }
 
     fun exportBackup() {
         viewModelScope.launch {

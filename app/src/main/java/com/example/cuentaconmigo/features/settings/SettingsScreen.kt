@@ -1,5 +1,6 @@
 package com.example.cuentaconmigo.features.settings
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -29,6 +31,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ripple
@@ -49,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.cuentaconmigo.ui.theme.brand
+import kotlinx.coroutines.delay
 import java.io.File
 
 @Composable
@@ -58,6 +62,7 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsState()
+    val updateCheckState by viewModel.updateCheckState.collectAsState()
 
     var showImportConfirm by remember { mutableStateOf(false) }
     var pendingImportUri by remember { mutableStateOf<Uri?>(null) }
@@ -83,6 +88,11 @@ fun SettingsScreen(
     }
 
     val isWorking = state is BackupOperationState.Working
+    val isCheckingForUpdates = updateCheckState is UpdateCheckState.Checking
+    // Una sola condición de "hay algo en curso": evita que se puedan disparar dos
+    // operaciones a la vez (p. ej. exportar mientras se busca una actualización), lo
+    // que podría terminar mostrando dos AlertDialog superpuestos.
+    val isBusy = isWorking || isCheckingForUpdates
 
     // MainActivity llama a enableEdgeToEdge(), así que el contenido se dibuja debajo de
     // las barras del sistema salvo que alguien aplique los insets. El Scaffold es quien
@@ -147,7 +157,7 @@ fun SettingsScreen(
                     icon = Icons.Default.CloudUpload,
                     title = "Exportar copia de seguridad",
                     description = "Genera un archivo con todos tus datos y compártelo por WhatsApp, Gmail, Drive, etc.",
-                    enabled = !isWorking,
+                    enabled = !isBusy,
                     onClick = { viewModel.exportBackup() }
                 )
 
@@ -155,20 +165,21 @@ fun SettingsScreen(
                     icon = Icons.Default.CloudDownload,
                     title = "Importar copia de seguridad",
                     description = "Reemplaza todos los datos actuales por los de un archivo de respaldo.",
-                    enabled = !isWorking,
+                    enabled = !isBusy,
                     onClick = { importLauncher.launch(arrayOf("*/*")) }
                 )
 
-                if (isWorking) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
+                LoadingIndicatorRow(visible = isWorking)
+
+                SettingsActionCard(
+                    icon = Icons.Default.SystemUpdate,
+                    title = "Buscar actualizaciones",
+                    description = "Comprueba si hay una versión más nueva de la app disponible.",
+                    enabled = !isBusy,
+                    onClick = { viewModel.checkForUpdates() }
+                )
+
+                LoadingIndicatorRow(visible = isCheckingForUpdates)
             }
         }
     }
@@ -223,17 +234,106 @@ fun SettingsScreen(
     }
 
     if (currentState is BackupOperationState.Error) {
+        ErrorDialog(message = currentState.message, onDismiss = { viewModel.consumeState() })
+    }
+
+    val currentUpdateCheckState = updateCheckState
+    if (currentUpdateCheckState is UpdateCheckState.UpdateAvailable) {
+        val manifest = currentUpdateCheckState.manifest
         AlertDialog(
-            onDismissRequest = { viewModel.consumeState() },
-            title = { Text("No se pudo completar la operación") },
-            text = { Text(currentState.message) },
+            onDismissRequest = { viewModel.consumeUpdateCheckState() },
+            title = { Text("Nueva versión disponible") },
+            text = {
+                Column {
+                    Text(
+                        text = "Versión ${manifest.versionName}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    if (manifest.notes.isNotBlank()) {
+                        Text(
+                            text = manifest.notes,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                }
+            },
             confirmButton = {
-                TextButton(onClick = { viewModel.consumeState() }) {
-                    Text("Entendido")
+                TextButton(onClick = {
+                    viewModel.consumeUpdateCheckState()
+                    openInBrowser(
+                        context = context,
+                        url = manifest.apkUrl,
+                        onFailure = { viewModel.onDownloadLinkUnavailable() }
+                    )
+                }) {
+                    Text("Descargar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.consumeUpdateCheckState() }) {
+                    Text("Ahora no")
                 }
             }
         )
     }
+
+    if (currentUpdateCheckState is UpdateCheckState.Error) {
+        ErrorDialog(
+            message = currentUpdateCheckState.message,
+            onDismiss = { viewModel.consumeUpdateCheckState() }
+        )
+    }
+
+    // Feedback no modal para una confirmación que no requiere acción de la persona
+    // usuaria, en línea con el patrón ya usado en el resto de la app (ver
+    // TransactionFormScreen): se muestra unos segundos y se limpia sola. Va envuelto
+    // en un Box de pantalla completa alineado abajo porque, a diferencia de AlertDialog
+    // (una ventana real), Snackbar es un composable de layout más: sin este wrapper
+    // dibujaría arriba a la izquierda, superpuesto con el encabezado.
+    if (currentUpdateCheckState is UpdateCheckState.UpToDate) {
+        LaunchedEffect(currentUpdateCheckState) {
+            delay(3_000)
+            viewModel.consumeUpdateCheckState()
+        }
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Snackbar(modifier = Modifier.padding(16.dp)) {
+                Text("Ya tienes la última versión instalada.")
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoadingIndicatorRow(visible: Boolean) {
+    if (visible) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    }
+}
+
+@Composable
+private fun ErrorDialog(message: String, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("No se pudo completar la operación") },
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Entendido")
+            }
+        }
+    )
 }
 
 @Composable
@@ -298,6 +398,24 @@ private fun shareBackupFile(context: Context, file: File) {
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
     context.startActivity(Intent.createChooser(intent, "Compartir copia de seguridad"))
+}
+
+/**
+ * A propósito deriva al navegador en vez de descargar/instalar el APK dentro de la
+ * app: nunca se pide `REQUEST_INSTALL_PACKAGES` ni se toca PackageInstaller.
+ *
+ * `url` viene de un servidor remoto (el manifiesto de versión): aunque
+ * [com.example.cuentaconmigo.core.update.UpdateManifestParser] ya valida que sea un
+ * http(s) URL, el dispositivo puede no tener ninguna app capaz de resolverlo, lo que
+ * hace que `startActivity` lance `ActivityNotFoundException`. Se captura acá para que
+ * un manifiesto o dispositivo inesperado no tumbe la app entera.
+ */
+private fun openInBrowser(context: Context, url: String, onFailure: () -> Unit) {
+    try {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    } catch (e: ActivityNotFoundException) {
+        onFailure()
+    }
 }
 
 private fun restartApp(context: Context) {
