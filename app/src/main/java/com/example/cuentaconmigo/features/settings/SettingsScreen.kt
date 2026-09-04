@@ -31,7 +31,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ripple
@@ -52,7 +53,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.cuentaconmigo.ui.theme.brand
-import kotlinx.coroutines.delay
 import java.io.File
 
 @Composable
@@ -63,6 +63,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     val state by viewModel.state.collectAsState()
     val updateCheckState by viewModel.updateCheckState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     var showImportConfirm by remember { mutableStateOf(false) }
     var pendingImportUri by remember { mutableStateOf<Uri?>(null) }
@@ -99,7 +100,10 @@ fun SettingsScreen(
     // los resuelve, y es el patrón que usa el resto de las pantallas del proyecto.
     // El header propio se mantiene (mismo lenguaje visual que Home) dentro del área
     // que el Scaffold deja libre.
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { scaffoldPadding ->
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { scaffoldPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -287,23 +291,15 @@ fun SettingsScreen(
     }
 
     // Feedback no modal para una confirmación que no requiere acción de la persona
-    // usuaria, en línea con el patrón ya usado en el resto de la app (ver
-    // TransactionFormScreen): se muestra unos segundos y se limpia sola. Va envuelto
-    // en un Box de pantalla completa alineado abajo porque, a diferencia de AlertDialog
-    // (una ventana real), Snackbar es un composable de layout más: sin este wrapper
-    // dibujaría arriba a la izquierda, superpuesto con el encabezado.
-    if (currentUpdateCheckState is UpdateCheckState.UpToDate) {
-        LaunchedEffect(currentUpdateCheckState) {
-            delay(3_000)
+    // usuaria: se muestra unos segundos y se limpia sola. Se emite por el slot
+    // `snackbarHost` del Scaffold y no como un composable suelto, porque con
+    // enableEdgeToEdge() activo cualquier cosa dibujada fuera del Scaffold queda debajo
+    // de la barra de navegación del sistema. El Scaffold es el único que resuelve esos
+    // insets, y además se encarga de la duración y de la animación.
+    LaunchedEffect(currentUpdateCheckState) {
+        if (currentUpdateCheckState is UpdateCheckState.UpToDate) {
+            snackbarHostState.showSnackbar("Ya tienes la última versión instalada.")
             viewModel.consumeUpdateCheckState()
-        }
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            Snackbar(modifier = Modifier.padding(16.dp)) {
-                Text("Ya tienes la última versión instalada.")
-            }
         }
     }
 }
