@@ -3,12 +3,13 @@ package com.example.cuentaconmigo.features.reports
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.cuentaconmigo.domain.model.AccountTotal
+import com.example.cuentaconmigo.domain.model.CategoryExpenseShare
 import com.example.cuentaconmigo.domain.model.IncomeStatement
 import com.example.cuentaconmigo.domain.model.Transaction
 import com.example.cuentaconmigo.domain.repository.DepositAccountRepository
 import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
 import com.example.cuentaconmigo.domain.repository.TransactionRepository
+import com.example.cuentaconmigo.domain.usecase.CategoryExpenseShareCalculator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -17,7 +18,8 @@ import javax.inject.Inject
 
 data class FinancialReportState(
     val incomeStatement: IncomeStatement? = null,
-    val expenseByCategory: List<AccountTotal> = emptyList(),
+    val expenseByCategory: List<CategoryExpenseShare> = emptyList(),
+    val totalExpense: Long = 0L,
     val categoryNamesById: Map<Long, String> = emptyMap(),
     val transactions: List<Transaction> = emptyList(),
     val isLoading: Boolean = false,
@@ -101,10 +103,12 @@ class FinancialReportViewModel @Inject constructor(
                 .getExpenseTotalsByDestination(userId, startDay, endDay)
                 .first()
                 .filter { it.total > 0 }
+            val expenseCalculation = CategoryExpenseShareCalculator.calculate(expenseTotals)
 
             _state.value = FinancialReportState(
                 incomeStatement = incomeStatement,
-                expenseByCategory = expenseTotals,
+                expenseByCategory = expenseCalculation.shares,
+                totalExpense = expenseCalculation.totalExpense,
                 categoryNamesById = categoryNamesById,
                 transactions = transactions,
                 generated = true

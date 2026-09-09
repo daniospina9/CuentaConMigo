@@ -13,7 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.cuentaconmigo.core.util.toCopString
-import com.example.cuentaconmigo.domain.model.AccountTotal
+import com.example.cuentaconmigo.domain.model.CategoryExpenseShare
 import com.example.cuentaconmigo.domain.model.IncomeStatement
 import com.example.cuentaconmigo.domain.model.Transaction
 import com.example.cuentaconmigo.domain.model.TransactionType
@@ -109,20 +109,19 @@ fun FinancialReportScreen(
                 }
 
                 if (state.expenseByCategory.isNotEmpty()) {
-                    val totalExpense = state.expenseByCategory.sumOf { it.total }
                     item {
                         Spacer(Modifier.height(4.dp))
                         Text("Gastos por categoría", style = MaterialTheme.typography.titleMedium)
                         HorizontalDivider(Modifier.padding(vertical = 4.dp))
                     }
                     items(state.expenseByCategory) { cat ->
-                        CategoryRow(cat, totalExpense)
+                        CategoryRow(cat)
                         HorizontalDivider()
                     }
                     item {
                         ListItem(
                             headlineContent = { Text("Total", style = MaterialTheme.typography.titleSmall) },
-                            trailingContent = { Text(totalExpense.toCopString(), style = MaterialTheme.typography.titleSmall) }
+                            trailingContent = { Text(state.totalExpense.toCopString(), style = MaterialTheme.typography.titleSmall) }
                         )
                     }
                 }
@@ -180,15 +179,14 @@ private fun ReportRow(label: String, value: String, bold: Boolean = false) {
 }
 
 @Composable
-private fun CategoryRow(cat: AccountTotal, totalExpense: Long) {
-    val percentage = if (totalExpense > 0) cat.total * 100.0 / totalExpense else 0.0
+private fun CategoryRow(cat: CategoryExpenseShare) {
     ListItem(
         headlineContent = { Text(cat.destinationAccountName) },
         trailingContent = {
             Column(horizontalAlignment = Alignment.End) {
                 Text(cat.total.toCopString())
                 Text(
-                    String.format(Locale("es", "CO"), "%.1f%%", percentage),
+                    String.format(Locale("es", "CO"), "%.1f%%", cat.percentage),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
