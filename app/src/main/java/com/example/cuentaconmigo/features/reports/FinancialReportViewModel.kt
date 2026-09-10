@@ -10,9 +10,13 @@ import com.example.cuentaconmigo.domain.repository.DepositAccountRepository
 import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
 import com.example.cuentaconmigo.domain.repository.TransactionRepository
 import com.example.cuentaconmigo.domain.usecase.CategoryExpenseShareCalculator
+import com.example.cuentaconmigo.features.reports.export.FinancialReportExportDataMapper
+import com.example.cuentaconmigo.features.reports.export.FinancialReportExporter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.IOException
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -32,6 +36,7 @@ class FinancialReportViewModel @Inject constructor(
     private val depositAccountRepository: DepositAccountRepository,
     private val destinationAccountRepository: DestinationAccountRepository,
     private val transactionRepository: TransactionRepository,
+    private val reportExporter: FinancialReportExporter,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -44,6 +49,12 @@ class FinancialReportViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(FinancialReportState())
     val state: StateFlow<FinancialReportState> = _state.asStateFlow()
+
+    // Evento de un solo uso: el archivo exportado se consume una vez para abrir el
+    // share sheet y se limpia con onExportHandled(). Si no se limpiara, un cambio de
+    // configuración (rotación) volvería a abrir el share sheet con el mismo archivo.
+    private val _exportedFile = MutableStateFlow<File?>(null)
+    val exportedFile: StateFlow<File?> = _exportedFile.asStateFlow()
 
     fun setStartDate(date: LocalDate) { _startDate.value = date }
     fun setEndDate(date: LocalDate) { _endDate.value = date }
@@ -117,4 +128,19 @@ class FinancialReportViewModel @Inject constructor(
     }
 
     fun clearError() { _state.value = _state.value.copy(error = null) }
+
+    fun onExportHandled() { _exportedFile.value = null }
+
+    fun exportReport() {
+        val data = FinancialReportExportDataMapper.from(_state.value, _startDate.value, _endDate.value)
+            ?: run { _state.value = _state.value.copy(error = "Genera el informe antes de exportarlo"); return }
+
+        viewModelScope.launch {
+            try {
+                _exportedFile.value = reportExporter.export(data)
+            } catch (e: IOException) {
+                _state.value = _state.value.copy(error = "No se pudo generar el archivo de Excel")
+            }
+        }
+    }
 }

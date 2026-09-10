@@ -1,5 +1,7 @@
 package com.example.cuentaconmigo.features.reports
 
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,14 +11,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.cuentaconmigo.core.util.toCopString
 import com.example.cuentaconmigo.domain.model.CategoryExpenseShare
 import com.example.cuentaconmigo.domain.model.IncomeStatement
 import com.example.cuentaconmigo.domain.model.Transaction
 import com.example.cuentaconmigo.domain.model.TransactionType
+import java.io.File
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -32,8 +37,17 @@ fun FinancialReportScreen(
     val state by viewModel.state.collectAsState()
     val startDate by viewModel.startDate.collectAsState()
     val endDate by viewModel.endDate.collectAsState()
+    val exportedFile by viewModel.exportedFile.collectAsState()
+    val context = LocalContext.current
     val shortFmt = remember { DateTimeFormatter.ofPattern("dd/MM/yy") }
     val txFmt = remember { DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("es", "CO")) }
+
+    LaunchedEffect(exportedFile) {
+        exportedFile?.let { file ->
+            shareReportFile(context, file)
+            viewModel.onExportHandled()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -84,6 +98,13 @@ fun FinancialReportScreen(
                     enabled = !state.isLoading
                 ) {
                     Text(if (state.isLoading) "Generando..." else "Generar informe")
+                }
+                if (state.generated && !state.isLoading) {
+                    Spacer(Modifier.height(4.dp))
+                    OutlinedButton(
+                        onClick = { viewModel.exportReport() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Exportar a Excel") }
                 }
             }
 
@@ -237,4 +258,16 @@ private fun DatePickerButton(
             DatePicker(state = pickerState)
         }
     }
+}
+
+private fun shareReportFile(context: Context, file: File) {
+    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        // Este MIME type es lo que hace que Android ofrezca Excel/Sheets en el
+        // selector, en vez de un manejador de archivos genérico.
+        type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        putExtra(Intent.EXTRA_STREAM, uri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(Intent.createChooser(intent, "Compartir informe"))
 }
