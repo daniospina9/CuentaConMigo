@@ -158,7 +158,15 @@ fun FinancialReportScreen(
                             state.categoryNamesById[tx.destinationAccountId]
                         else
                             null
-                        TransactionListItem(tx, txFmt, categoryLabel = categoryLabel)
+                        val fromTcPurchase = tx.id in state.tcPurchaseLinkedIds
+                        val fromExtract = tx.id in state.extractProtectedIds
+                        TransactionListItem(
+                            tx,
+                            txFmt,
+                            fromExtract = fromExtract,
+                            fromTcPurchase = fromTcPurchase,
+                            categoryLabel = categoryLabel
+                        )
                         HorizontalDivider()
                     }
                 } else {

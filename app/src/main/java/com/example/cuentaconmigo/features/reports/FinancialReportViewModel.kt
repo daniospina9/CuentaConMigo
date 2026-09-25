@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.cuentaconmigo.domain.model.CategoryExpenseShare
 import com.example.cuentaconmigo.domain.model.IncomeStatement
 import com.example.cuentaconmigo.domain.model.Transaction
+import com.example.cuentaconmigo.domain.repository.CreditCardRepository
 import com.example.cuentaconmigo.domain.repository.DepositAccountRepository
 import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
 import com.example.cuentaconmigo.domain.repository.TransactionRepository
@@ -26,6 +27,8 @@ data class FinancialReportState(
     val totalExpense: Long = 0L,
     val categoryNamesById: Map<Long, String> = emptyMap(),
     val transactions: List<Transaction> = emptyList(),
+    val tcPurchaseLinkedIds: Set<Long> = emptySet(),
+    val extractProtectedIds: Set<Long> = emptySet(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val generated: Boolean = false
@@ -36,6 +39,7 @@ class FinancialReportViewModel @Inject constructor(
     private val depositAccountRepository: DepositAccountRepository,
     private val destinationAccountRepository: DestinationAccountRepository,
     private val transactionRepository: TransactionRepository,
+    private val creditCardRepository: CreditCardRepository,
     private val reportExporter: FinancialReportExporter,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -110,6 +114,11 @@ class FinancialReportViewModel @Inject constructor(
 
             val transactions = transactionRepository.getNonTransferTransactions(userId, start, end)
 
+            // Se cargan para marcar visualmente en el detalle qué gastos vienen de
+            // tarjeta de crédito (compras o intereses/comisiones de extracto).
+            val tcPurchaseLinkedIds = creditCardRepository.getTcPurchaseLinkedTransactionIds()
+            val extractProtectedIds = creditCardRepository.getExtractLinkedTransactionIds()
+
             val expenseTotals = transactionRepository
                 .getExpenseTotalsByDestination(userId, startDay, endDay)
                 .first()
@@ -122,6 +131,8 @@ class FinancialReportViewModel @Inject constructor(
                 totalExpense = expenseCalculation.totalExpense,
                 categoryNamesById = categoryNamesById,
                 transactions = transactions,
+                tcPurchaseLinkedIds = tcPurchaseLinkedIds,
+                extractProtectedIds = extractProtectedIds,
                 generated = true
             )
         }
