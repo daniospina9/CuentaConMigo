@@ -117,4 +117,17 @@ class FinancialReportExportDataMapperTest {
             result
         )
     }
+
+    @Test
+    fun `caso feliz copia los ids vinculados a tarjeta de credito`() {
+        val state = generatedState.copy(
+            tcPurchaseLinkedIds = setOf(1L, 2L),
+            extractProtectedIds = setOf(3L)
+        )
+
+        val result = FinancialReportExportDataMapper.from(state, start, end)
+
+        assertEquals(setOf(1L, 2L), result?.tcPurchaseLinkedIds)
+        assertEquals(setOf(3L), result?.extractProtectedIds)
+    }
 }

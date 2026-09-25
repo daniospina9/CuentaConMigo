@@ -34,7 +34,9 @@ object FinancialReportExportDataMapper {
             expenseByCategory = state.expenseByCategory,
             totalExpense = state.totalExpense,
             transactions = state.transactions,
-            categoryNamesById = state.categoryNamesById
+            categoryNamesById = state.categoryNamesById,
+            tcPurchaseLinkedIds = state.tcPurchaseLinkedIds,
+            extractProtectedIds = state.extractProtectedIds
         )
     }
 }

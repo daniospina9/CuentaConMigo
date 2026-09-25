@@ -42,7 +42,12 @@ object FinancialReportWorkbookBuilder {
         rows += expenseByCategoryRows(data.expenseByCategory, data.totalExpense)
         rows += EMPTY_ROW
 
-        rows += transactionsRows(data.transactions, data.categoryNamesById)
+        rows += transactionsRows(
+            data.transactions,
+            data.categoryNamesById,
+            data.tcPurchaseLinkedIds,
+            data.extractProtectedIds
+        )
 
         return XlsxWorkbook(
             sheets = listOf(
@@ -115,7 +120,9 @@ object FinancialReportWorkbookBuilder {
 
     private fun transactionsRows(
         transactions: List<Transaction>,
-        categoryNamesById: Map<Long, String>
+        categoryNamesById: Map<Long, String>,
+        tcPurchaseLinkedIds: Set<Long>,
+        extractProtectedIds: Set<Long>
     ): List<XlsxRow> {
         val header = XlsxRow(listOf(XlsxCell.Header("Detalle de transacciones")))
 
@@ -139,7 +146,7 @@ object FinancialReportWorkbookBuilder {
             XlsxRow(
                 listOf(
                     XlsxCell.Date(transaction.date),
-                    XlsxCell.Text(typeLabel(transaction.type)),
+                    XlsxCell.Text(typeLabel(transaction, tcPurchaseLinkedIds, extractProtectedIds)),
                     categoryCell(transaction, categoryNamesById),
                     descriptionCell(transaction.description),
                     XlsxCell.Currency(transaction.amount)
@@ -150,10 +157,25 @@ object FinancialReportWorkbookBuilder {
         return listOf(header, columnHeaders) + transactionRows
     }
 
-    private fun typeLabel(type: TransactionType): String = when (type) {
-        TransactionType.INCOME -> "Ingreso"
-        TransactionType.EXPENSE -> "Gasto"
-        TransactionType.TRANSFER -> "Transferencia"
+    /**
+     * Etiqueta de la columna "Tipo". Un gasto que proviene de tarjeta de
+     * crédito (compra o interés/comisión de extracto, ver [tcPurchaseLinkedIds]
+     * y [extractProtectedIds]) se distingue como "Gasto (TC)"; el resto de
+     * gastos, ingresos y transferencias mantienen su etiqueta original.
+     */
+    private fun typeLabel(
+        transaction: Transaction,
+        tcPurchaseLinkedIds: Set<Long>,
+        extractProtectedIds: Set<Long>
+    ): String {
+        val isCreditCardExpense = transaction.type == TransactionType.EXPENSE &&
+            (transaction.id in tcPurchaseLinkedIds || transaction.id in extractProtectedIds)
+        return when {
+            isCreditCardExpense -> "Gasto (TC)"
+            transaction.type == TransactionType.EXPENSE -> "Gasto"
+            transaction.type == TransactionType.INCOME -> "Ingreso"
+            else -> "Transferencia"
+        }
     }
 
     private fun categoryCell(

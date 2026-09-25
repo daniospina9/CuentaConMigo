@@ -23,5 +23,7 @@ data class FinancialReportExportData(
     val expenseByCategory: List<CategoryExpenseShare>,
     val totalExpense: Long,
     val transactions: List<Transaction>,
-    val categoryNamesById: Map<Long, String>
+    val categoryNamesById: Map<Long, String>,
+    val tcPurchaseLinkedIds: Set<Long> = emptySet(),
+    val extractProtectedIds: Set<Long> = emptySet()
 )

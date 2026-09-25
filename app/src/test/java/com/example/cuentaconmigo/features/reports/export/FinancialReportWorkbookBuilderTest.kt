@@ -30,7 +30,9 @@ class FinancialReportWorkbookBuilderTest {
         expenseByCategory: List<CategoryExpenseShare> = emptyList(),
         totalExpense: Long = 0L,
         transactions: List<Transaction> = emptyList(),
-        categoryNamesById: Map<Long, String> = emptyMap()
+        categoryNamesById: Map<Long, String> = emptyMap(),
+        tcPurchaseLinkedIds: Set<Long> = emptySet(),
+        extractProtectedIds: Set<Long> = emptySet()
     ) = FinancialReportExportData(
         startDate = start,
         endDate = end,
@@ -38,7 +40,9 @@ class FinancialReportWorkbookBuilderTest {
         expenseByCategory = expenseByCategory,
         totalExpense = totalExpense,
         transactions = transactions,
-        categoryNamesById = categoryNamesById
+        categoryNamesById = categoryNamesById,
+        tcPurchaseLinkedIds = tcPurchaseLinkedIds,
+        extractProtectedIds = extractProtectedIds
     )
 
     @Test
@@ -171,9 +175,10 @@ class FinancialReportWorkbookBuilderTest {
         amount: Long = 10_000L,
         date: LocalDate = start,
         destinationAccountId: Long? = null,
-        description: String? = null
+        description: String? = null,
+        id: Long = 1L
     ) = Transaction(
-        id = 1L,
+        id = id,
         userId = 1L,
         depositAccountId = 1L,
         destinationAccountId = destinationAccountId,
@@ -207,6 +212,28 @@ class FinancialReportWorkbookBuilderTest {
         assertEquals("Ingreso", (rows[15].cells[1] as XlsxCell.Text).value)
         assertEquals("Gasto", (rows[16].cells[1] as XlsxCell.Text).value)
         assertEquals("Transferencia", (rows[17].cells[1] as XlsxCell.Text).value)
+    }
+
+    @Test
+    fun `el tipo de un gasto vinculado a tarjeta de credito se etiqueta como Gasto (TC)`() {
+        val transactions = listOf(
+            transaction(TransactionType.EXPENSE, id = 1L), // compra TC
+            transaction(TransactionType.EXPENSE, id = 2L), // interés/comisión de extracto
+            transaction(TransactionType.EXPENSE, id = 3L), // gasto normal
+            transaction(TransactionType.INCOME, id = 4L) // el id está vinculado pero no es gasto
+        )
+        val rows = FinancialReportWorkbookBuilder.build(
+            minimalData(
+                transactions = transactions,
+                tcPurchaseLinkedIds = setOf(1L),
+                extractProtectedIds = setOf(2L, 4L)
+            )
+        ).sheets.single().rows
+
+        assertEquals("Gasto (TC)", (rows[15].cells[1] as XlsxCell.Text).value)
+        assertEquals("Gasto (TC)", (rows[16].cells[1] as XlsxCell.Text).value)
+        assertEquals("Gasto", (rows[17].cells[1] as XlsxCell.Text).value)
+        assertEquals("Ingreso", (rows[18].cells[1] as XlsxCell.Text).value)
     }
 
     @Test
