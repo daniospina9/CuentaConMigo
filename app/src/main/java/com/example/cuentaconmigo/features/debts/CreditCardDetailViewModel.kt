@@ -15,7 +15,9 @@ import com.example.cuentaconmigo.domain.model.MinPaymentType
 import com.example.cuentaconmigo.domain.repository.DepositAccountRepository
 import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
 import kotlinx.coroutines.Job
+import com.example.cuentaconmigo.domain.usecase.credit_card.CreditCardEdits
 import com.example.cuentaconmigo.domain.usecase.credit_card.DeleteCreditCardTransactionUseCase
+import com.example.cuentaconmigo.domain.usecase.credit_card.UpdateCreditCardUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.DeleteExtractUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.GetCreditCardDetailUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.ReconcileExtractUseCase
@@ -41,6 +43,7 @@ class CreditCardDetailViewModel @Inject constructor(
     private val updateExtractUseCase: UpdateExtractUseCase,
     private val deleteExtractUseCase: DeleteExtractUseCase,
     private val reconcileExtractUseCase: ReconcileExtractUseCase,
+    private val updateCreditCardUseCase: UpdateCreditCardUseCase,
     private val creditCardRepository: CreditCardRepository,
     private val depositAccountRepository: DepositAccountRepository,
     private val destinationAccountRepository: DestinationAccountRepository,
@@ -202,6 +205,14 @@ class CreditCardDetailViewModel @Inject constructor(
     fun updateTransaction(tx: CreditCardTransaction) {
         viewModelScope.launch {
             runCatching { updateCreditCardTransactionUseCase(tx) }
+                .onFailure { _errorMessage.value = it.message }
+        }
+    }
+
+    fun updateCard(edits: CreditCardEdits) {
+        val existing = card.value ?: return
+        viewModelScope.launch {
+            runCatching { updateCreditCardUseCase(existing, edits) }
                 .onFailure { _errorMessage.value = it.message }
         }
     }

@@ -46,3 +46,17 @@ fun filterAmountInput(current: String, new: String): String {
         .reversed()
     return if (parts.size == 2) "$formattedInt,${parts[1]}" else formattedInt
 }
+
+// Inverse of parseToCentavos for pre-filling amount inputs: 150050 → "1.500,50", 150000 → "1.500"
+fun Long.toAmountInputString(): String {
+    val whole = this / 100
+    val cents = this % 100
+    val raw = if (cents == 0L) "$whole" else "$whole,${cents.toString().padStart(2, '0')}"
+    return filterAmountInput("", raw)
+}
+
+// Strict decimal parsing: accepts "," or "." as separator; null when blank, malformed or negative
+private val plainDecimal = Regex("""\d+([.,]\d+)?""")
+
+fun String.parseNonNegativeDecimal(): Double? =
+    trim().takeIf { plainDecimal.matches(it) }?.replace(",", ".")?.toDoubleOrNull()

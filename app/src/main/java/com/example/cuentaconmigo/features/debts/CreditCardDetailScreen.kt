@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,8 +23,13 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.cuentaconmigo.core.util.filterAmountInput
+import com.example.cuentaconmigo.core.util.parseNonNegativeDecimal
 import com.example.cuentaconmigo.core.util.parseToCentavos
+import com.example.cuentaconmigo.core.util.toAmountInputString
 import com.example.cuentaconmigo.core.util.toCopString
+import com.example.cuentaconmigo.domain.model.CreditCard
+import com.example.cuentaconmigo.domain.model.MinPaymentType
+import com.example.cuentaconmigo.domain.usecase.credit_card.CreditCardEdits
 import com.example.cuentaconmigo.domain.model.AccountType
 import com.example.cuentaconmigo.domain.model.CreditCardExtract
 import com.example.cuentaconmigo.domain.model.CreditCardTransaction
@@ -56,6 +62,7 @@ fun CreditCardDetailScreen(
     var showPaymentDialog by remember { mutableStateOf(false) }
     var showChargeDialog by remember { mutableStateOf(false) }
     var showExtractDialog by remember { mutableStateOf(false) }
+    var showEditCardDialog by remember { mutableStateOf(false) }
     var showReconciliationDialog by remember { mutableStateOf(false) }
     var extractToEdit by remember { mutableStateOf<CreditCardExtract?>(null) }
     var extractToDelete by remember { mutableStateOf<CreditCardExtract?>(null) }
@@ -81,6 +88,11 @@ fun CreditCardDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showEditCardDialog = true }, enabled = card != null) {
+                        Icon(Icons.Default.Edit, contentDescription = "Editar tarjeta")
                     }
                 }
             )
@@ -165,7 +177,7 @@ fun CreditCardDetailScreen(
                             Text(
                                 available.toCopString(),
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = Color(0xFF2E7D32)
+                                color = if (available < 0) MaterialTheme.colorScheme.error else Color(0xFF2E7D32)
                             )
                         }
                         Row(
@@ -392,6 +404,16 @@ fun CreditCardDetailScreen(
             },
             dismissButton = { TextButton(onClick = { txToDelete = null }) { Text("Cancelar") } }
         )
+    }
+
+    if (showEditCardDialog) {
+        card?.let { current ->
+            EditCreditCardDialog(
+                card = current,
+                onConfirm = { edits -> viewModel.updateCard(edits); showEditCardDialog = false },
+                onDismiss = { showEditCardDialog = false }
+            )
+        }
     }
 
     txToEdit?.let { tx ->
@@ -1315,5 +1337,163 @@ private fun ReconciliationDetailDialog(
                 TextButton(onClick = onDismiss) { Text("Cerrar") }
             }
         }
+    )
+}
+
+private fun Double.toInputString(): String =
+    if (this % 1.0 == 0.0) toLong().toString() else toString()
+
+@Composable
+private fun EditCreditCardDialog(
+    card: CreditCard,
+    onConfirm: (CreditCardEdits) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name by remember { mutableStateOf(card.name) }
+    var lastFour by remember { mutableStateOf(card.lastFourDigits.orEmpty()) }
+    var limitTfv by remember { mutableStateOf(TextFieldValue(card.creditLimit.toAmountInputString())) }
+    var rateStr by remember { mutableStateOf(card.interestRateAnnual.toInputString()) }
+    var minType by remember { mutableStateOf(card.minPaymentType) }
+    var minPercentStr by remember { mutableStateOf(card.minPaymentPercent.toInputString()) }
+    var minFixedTfv by remember {
+        mutableStateOf(TextFieldValue(if (card.minPaymentFixed > 0) card.minPaymentFixed.toAmountInputString() else ""))
+    }
+    var monthlyFeeTfv by remember {
+        mutableStateOf(TextFieldValue(if (card.monthlyFee > 0) card.monthlyFee.toAmountInputString() else ""))
+    }
+
+    val rate = rateStr.parseNonNegativeDecimal()
+    val minPercent = minPercentStr.parseNonNegativeDecimal()
+    val percentOk = minType != MinPaymentType.PERCENTAGE || minPercent != null
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Editar tarjeta") },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Nombre de la tarjeta") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = lastFour,
+                    onValueChange = { if (it.length <= 4 && it.all { c -> c.isDigit() }) lastFour = it },
+                    label = { Text("Últimos 4 dígitos (opcional)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = limitTfv,
+                    onValueChange = { new -> limitTfv = filterAmountInput(limitTfv, new) },
+                    label = { Text("Límite de crédito") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = rateStr,
+                    onValueChange = { rateStr = it },
+                    label = { Text("Tasa efectiva anual - TEA (%)") },
+                    isError = rate == null,
+                    supportingText = if (rate == null) { { Text("Ingresa un número válido (ej. 28,5)") } } else null,
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = card.cutOffDay.toString(),
+                    onValueChange = {},
+                    enabled = false,
+                    label = { Text("Día de corte") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = card.paymentDueDay.toString(),
+                    onValueChange = {},
+                    enabled = false,
+                    label = { Text("Día de vencimiento") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text("Tipo de pago mínimo", style = MaterialTheme.typography.labelMedium)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(
+                        selected = minType == MinPaymentType.PERCENTAGE,
+                        onClick = { minType = MinPaymentType.PERCENTAGE }
+                    )
+                    Text("Porcentaje")
+                    Spacer(Modifier.width(16.dp))
+                    RadioButton(
+                        selected = minType == MinPaymentType.FIXED,
+                        onClick = { minType = MinPaymentType.FIXED }
+                    )
+                    Text("Monto fijo")
+                }
+                if (minType == MinPaymentType.PERCENTAGE) {
+                    OutlinedTextField(
+                        value = minPercentStr,
+                        onValueChange = { minPercentStr = it },
+                        label = { Text("Porcentaje mínimo (%)") },
+                        isError = minPercent == null,
+                        supportingText = if (minPercent == null) { { Text("Ingresa un número válido (ej. 5)") } } else null,
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    OutlinedTextField(
+                        value = minFixedTfv,
+                        onValueChange = { new -> minFixedTfv = filterAmountInput(minFixedTfv, new) },
+                        label = { Text("Monto fijo mínimo") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                OutlinedTextField(
+                    value = monthlyFeeTfv,
+                    onValueChange = { new -> monthlyFeeTfv = filterAmountInput(monthlyFeeTfv, new) },
+                    label = { Text("Cuota de manejo mensual (opcional)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    "El día de corte y de vencimiento no se pueden modificar.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        },
+        confirmButton = {
+            val limit = limitTfv.text.parseToCentavos() ?: 0L
+            val minFixed = if (minType == MinPaymentType.FIXED) minFixedTfv.text.parseToCentavos() ?: 0L else 0L
+            val monthlyFee = monthlyFeeTfv.text.parseToCentavos() ?: 0L
+            TextButton(
+                onClick = {
+                    onConfirm(
+                        CreditCardEdits(
+                            name = name,
+                            lastFourDigits = lastFour,
+                            creditLimit = limit,
+                            interestRateAnnual = rate ?: return@TextButton,
+                            minPaymentType = minType,
+                            minPaymentPercent = if (minType == MinPaymentType.PERCENTAGE) minPercent ?: return@TextButton else 0.0,
+                            minPaymentFixed = minFixed,
+                            monthlyFee = monthlyFee
+                        )
+                    )
+                },
+                enabled = name.isNotBlank() && limit > 0 && rate != null && percentOk
+            ) { Text("Guardar") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )
 }

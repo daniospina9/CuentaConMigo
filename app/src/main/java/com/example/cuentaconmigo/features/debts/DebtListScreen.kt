@@ -277,7 +277,7 @@ private fun CreditCardListItem(
                 Text(
                     "Disponible: ${available.toCopString()}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
+                    color = if (available < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                 )
             }
         },
