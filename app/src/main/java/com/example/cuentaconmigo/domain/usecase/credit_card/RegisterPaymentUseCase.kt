@@ -39,6 +39,8 @@ class RegisterPaymentUseCase @Inject constructor(
             .atZone(ZoneId.systemDefault())
             .toLocalDate()
 
+        val description = paymentDescription(cardName)
+
         val expenseId = transactionRepository.insert(
             Transaction(
                 id = 0,
@@ -48,7 +50,7 @@ class RegisterPaymentUseCase @Inject constructor(
                 type = TransactionType.EXPENSE,
                 amount = amount,
                 date = localDate,
-                description = "Pago TC: $cardName",
+                description = description,
                 transferGroupId = null
             )
         )
@@ -60,7 +62,7 @@ class RegisterPaymentUseCase @Inject constructor(
                 userId = userId,
                 type = CreditCardTransactionType.PAYMENT,
                 amount = amount,
-                description = "Pago TC: $cardName",
+                description = description,
                 date = date,
                 destinationAccountId = null,
                 linkedTransactionId = expenseId

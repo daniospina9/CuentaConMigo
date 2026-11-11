@@ -17,6 +17,7 @@ class UpdateCreditCardTransactionUseCase @Inject constructor(
                 transactionRepository.update(
                     linked.copy(
                         amount = tx.amount,
+                        description = linkedExpenseDescription(tx, linked.description),
                         destinationAccountId = tx.destinationAccountId ?: linked.destinationAccountId
                     )
                 )

@@ -4,6 +4,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cuentaconmigo.domain.model.AccountType
+import com.example.cuentaconmigo.domain.model.CreditCardTransaction
+import com.example.cuentaconmigo.domain.model.DestinationAccount
 import com.example.cuentaconmigo.domain.model.SimpleDebtKind
 import com.example.cuentaconmigo.domain.model.Transaction
 import com.example.cuentaconmigo.domain.repository.CreditCardRepository
@@ -11,6 +13,8 @@ import com.example.cuentaconmigo.domain.repository.DestinationAccountRepository
 import com.example.cuentaconmigo.domain.repository.SimpleDebtRepository
 import com.example.cuentaconmigo.domain.repository.TransactionRepository
 import com.example.cuentaconmigo.domain.usecase.DeleteTransactionUseCase
+import com.example.cuentaconmigo.domain.usecase.credit_card.UpdateCreditCardTransactionUseCase
+import com.example.cuentaconmigo.domain.usecase.credit_card.monthlyEffectiveRate
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -23,9 +27,11 @@ class AccountTransactionsViewModel @Inject constructor(
     private val creditCardRepository: CreditCardRepository,
     private val simpleDebtRepository: SimpleDebtRepository,
     private val deleteTransactionUseCase: DeleteTransactionUseCase,
+    private val updateCreditCardTransactionUseCase: UpdateCreditCardTransactionUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
+    private val userId: Long = checkNotNull(savedStateHandle["userId"])
     private val destinationAccountId: Long = checkNotNull(savedStateHandle["destinationAccountId"])
     private val startDay: Long = checkNotNull(savedStateHandle["startDay"])
     private val endDay: Long = checkNotNull(savedStateHandle["endDay"])
@@ -78,6 +84,51 @@ class AccountTransactionsViewModel @Inject constructor(
             deleteTransactionUseCase(tx)
             pendingDelete = null
             _showDeleteConfirm.value = false
+        }
+    }
+
+    // --- Edit of a credit card expense (same dialog as inside the card's movements) ---
+
+    /** Card transaction being edited, loaded from the linked expense; null when no dialog is open. */
+    data class CardTxEdit(val tx: CreditCardTransaction, val tem: Double)
+
+    private val _cardTxEdit = MutableStateFlow<CardTxEdit?>(null)
+    val cardTxEdit: StateFlow<CardTxEdit?> = _cardTxEdit.asStateFlow()
+
+    val destinationAccounts: StateFlow<List<DestinationAccount>> =
+        destinationAccountRepository.getByUser(userId)
+            .map { list -> list.filter { it.type != AccountType.SAVINGS } }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    fun clearError() { _errorMessage.value = null }
+
+    fun requestCardTxEdit(tx: Transaction) {
+        viewModelScope.launch {
+            runCatching {
+                val cardTx = creditCardRepository.getTransactionByLinkedId(tx.id)
+                if (cardTx == null || cardTx.extractId != null) {
+                    _errorMessage.value = "Este movimiento no se puede editar desde aquí"
+                    return@runCatching
+                }
+                val card = creditCardRepository.getById(cardTx.creditCardId).first()
+                _cardTxEdit.value = CardTxEdit(
+                    tx = cardTx,
+                    tem = card?.let { monthlyEffectiveRate(it.interestRateAnnual) } ?: 0.0
+                )
+            }.onFailure { _errorMessage.value = it.message ?: "No se pudo abrir el movimiento" }
+        }
+    }
+
+    fun cancelCardTxEdit() { _cardTxEdit.value = null }
+
+    fun updateCardTransaction(tx: CreditCardTransaction) {
+        _cardTxEdit.value = null
+        viewModelScope.launch {
+            runCatching { updateCreditCardTransactionUseCase(tx) }
+                .onFailure { _errorMessage.value = it.message ?: "No se pudo guardar el cambio" }
         }
     }
 }

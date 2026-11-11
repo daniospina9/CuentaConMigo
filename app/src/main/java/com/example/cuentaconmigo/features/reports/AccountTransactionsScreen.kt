@@ -16,6 +16,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.cuentaconmigo.core.util.toCopString
 import com.example.cuentaconmigo.domain.model.Transaction
 import com.example.cuentaconmigo.domain.model.TransactionType
+import com.example.cuentaconmigo.features.debts.EditCreditCardTxDialog
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -34,6 +35,28 @@ fun AccountTransactionsScreen(
     val simpleDebtLinkedIds by viewModel.simpleDebtLinkedIds.collectAsState()
     val loanGivenLinkedIds by viewModel.loanGivenLinkedIds.collectAsState()
     val formatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("es", "CO")) }
+    val cardTxEdit by viewModel.cardTxEdit.collectAsState()
+    val destinationAccounts by viewModel.destinationAccounts.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
+        }
+    }
+
+    cardTxEdit?.let { edit ->
+        EditCreditCardTxDialog(
+            tx = edit.tx,
+            destinationAccounts = destinationAccounts,
+            depositAccounts = emptyList(),
+            tem = edit.tem,
+            onConfirm = { updated -> viewModel.updateCardTransaction(updated) },
+            onDismiss = { viewModel.cancelCardTxEdit() }
+        )
+    }
 
     if (showDeleteConfirm) {
         AlertDialog(
@@ -53,6 +76,7 @@ fun AccountTransactionsScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(accountName) },
@@ -88,7 +112,11 @@ fun AccountTransactionsScreen(
                         fromTcPurchase = fromTcPurchase,
                         fromSimpleDebt = fromSimpleDebt,
                         fromLoanGiven = fromLoanGiven,
-                        onEdit = if (fromExtract || fromTcPurchase || fromSimpleDebt) null else ({ onNavigateToEdit(tx) }),
+                        onEdit = when {
+                            fromExtract || fromSimpleDebt -> null
+                            fromTcPurchase -> ({ viewModel.requestCardTxEdit(tx) })
+                            else -> ({ onNavigateToEdit(tx) })
+                        },
                         onDelete = if (fromExtract) null else ({ viewModel.requestDelete(tx) })
                     )
                     HorizontalDivider()

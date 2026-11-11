@@ -18,6 +18,7 @@ import kotlinx.coroutines.Job
 import com.example.cuentaconmigo.domain.usecase.credit_card.CreditCardEdits
 import com.example.cuentaconmigo.domain.usecase.credit_card.DeleteCreditCardTransactionUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.UpdateCreditCardUseCase
+import com.example.cuentaconmigo.domain.usecase.credit_card.monthlyEffectiveRate
 import com.example.cuentaconmigo.domain.usecase.credit_card.DeleteExtractUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.GetCreditCardDetailUseCase
 import com.example.cuentaconmigo.domain.usecase.credit_card.ReconcileExtractUseCase
@@ -115,9 +116,7 @@ class CreditCardDetailViewModel @Inject constructor(
         get() = (card.value?.creditLimit ?: 0L) - currentDebt.value
 
     val tem: Double
-        get() = card.value?.let {
-            Math.pow(1.0 + it.interestRateAnnual / 100.0, 1.0 / 12.0) - 1.0
-        } ?: 0.0
+        get() = card.value?.let { monthlyEffectiveRate(it.interestRateAnnual) } ?: 0.0
 
     val minPaymentAmount: Long
         get() {
