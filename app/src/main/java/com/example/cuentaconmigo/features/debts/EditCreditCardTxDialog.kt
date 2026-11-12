@@ -41,6 +41,11 @@ internal fun EditCreditCardTxDialog(
         mutableStateOf(destinationAccounts.firstOrNull { it.id == tx.destinationAccountId })
     }
     var destMenuExpanded by remember { mutableStateOf(false) }
+    // The category lives on the linked expense too, so it can be changed but never cleared.
+    // A purchase without a linked expense has no category to keep in sync, so the selector is hidden.
+    val categoryEditable = tx.type == CreditCardTransactionType.PURCHASE &&
+        tx.linkedTransactionId != null &&
+        destinationAccounts.isNotEmpty()
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -82,16 +87,16 @@ internal fun EditCreditCardTxDialog(
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
-                        if (destinationAccounts.isNotEmpty()) {
+                        if (categoryEditable) {
                             ExposedDropdownMenuBox(
                                 expanded = destMenuExpanded,
                                 onExpandedChange = { destMenuExpanded = it }
                             ) {
                                 OutlinedTextField(
-                                    value = selectedDestAccount?.name ?: "Sin categoría",
+                                    value = selectedDestAccount?.name ?: "",
                                     onValueChange = {},
                                     readOnly = true,
-                                    label = { Text("Cuenta destino (opcional)") },
+                                    label = { Text("Categoría") },
                                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = destMenuExpanded) },
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -101,10 +106,6 @@ internal fun EditCreditCardTxDialog(
                                     expanded = destMenuExpanded,
                                     onDismissRequest = { destMenuExpanded = false }
                                 ) {
-                                    DropdownMenuItem(
-                                        text = { Text("Ninguna") },
-                                        onClick = { selectedDestAccount = null; destMenuExpanded = false }
-                                    )
                                     destinationAccounts.forEach { acc ->
                                         DropdownMenuItem(
                                             text = { Text(acc.name) },
@@ -146,6 +147,8 @@ internal fun EditCreditCardTxDialog(
                             description = description.ifBlank { null },
                             installments = newCuotas,
                             destinationAccountId = selectedDestAccount?.id
+                                ?.takeIf { categoryEditable }
+                                ?: tx.destinationAccountId
                         )
                     )
                 },
