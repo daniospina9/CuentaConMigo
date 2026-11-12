@@ -21,6 +21,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.cuentaconmigo.core.util.filterAmountInput
+import com.example.cuentaconmigo.core.util.parseNonNegativeDecimal
 import com.example.cuentaconmigo.core.util.parseToCentavos
 import com.example.cuentaconmigo.core.util.toCopString
 import com.example.cuentaconmigo.domain.model.CreditCard
@@ -418,6 +419,14 @@ private fun CreateCreditCardDialog(
     var minValueTfv by remember { mutableStateOf(TextFieldValue("")) }
     var monthlyFeeTfv by remember { mutableStateOf(TextFieldValue("")) }
 
+    // A blank field means "not provided" (0). Text that is not a valid number is an error,
+    // never a silent 0.
+    val rate = if (rateStr.isBlank()) 0.0 else rateStr.parseNonNegativeDecimal()
+    val minPercent = when {
+        minType != MinPaymentType.PERCENTAGE || minValueStr.isBlank() -> 0.0
+        else -> minValueStr.parseNonNegativeDecimal()
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Nueva tarjeta de crédito") },
@@ -453,6 +462,8 @@ private fun CreateCreditCardDialog(
                     value = rateStr,
                     onValueChange = { rateStr = it },
                     label = { Text("Tasa efectiva anual - TEA (%)") },
+                    isError = rate == null,
+                    supportingText = if (rate == null) { { Text("Ingresa un número válido (ej. 28,5)") } } else null,
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth()
@@ -492,6 +503,8 @@ private fun CreateCreditCardDialog(
                         value = minValueStr,
                         onValueChange = { minValueStr = it },
                         label = { Text("Porcentaje mínimo (%)") },
+                        isError = minPercent == null,
+                        supportingText = if (minPercent == null) { { Text("Ingresa un número válido (ej. 5)") } } else null,
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         modifier = Modifier.fillMaxWidth()
@@ -518,24 +531,23 @@ private fun CreateCreditCardDialog(
         },
         confirmButton = {
             val limit = limitTfv.text.parseToCentavos() ?: 0L
-            val rate = rateStr.replace(",", ".").toDoubleOrNull() ?: 0.0
             val cutOff = cutOffStr.toIntOrNull()?.coerceIn(1, 31) ?: 0
             val dueDay = dueDayStr.toIntOrNull()?.coerceIn(1, 31) ?: 0
-            val minPercent = if (minType == MinPaymentType.PERCENTAGE) minValueStr.replace(",", ".").toDoubleOrNull() ?: 0.0 else 0.0
             val minFixed = if (minType == MinPaymentType.FIXED) minValueTfv.text.parseToCentavos() ?: 0L else 0L
             val monthlyFee = monthlyFeeTfv.text.parseToCentavos() ?: 0L
-            val isValid = name.isNotBlank() && limit > 0 && cutOff in 1..31 && dueDay in 1..31
+            val isValid = name.isNotBlank() && limit > 0 && cutOff in 1..31 && dueDay in 1..31 &&
+                rate != null && minPercent != null
             TextButton(
                 onClick = {
                     onConfirm(
                         name.trim(),
                         lastFour.ifBlank { null },
                         limit,
-                        rate,
+                        rate ?: return@TextButton,
                         cutOff,
                         dueDay,
                         minType,
-                        minPercent,
+                        minPercent ?: return@TextButton,
                         minFixed,
                         monthlyFee
                     )
